@@ -40,7 +40,7 @@ renderFrame textures gamestate window glossState = do
    swapBuffers window
 
    where (xpos, ypos) = gamestate ^. player.position
-         picPlayer = [translate xpos ypos  (textures ^. playerT), translate xpos ypos $ rectangleWire playerSize playerSize]
+         picPlayer = [translate xpos ypos  (textures ^. playerT)]
          picBlocks = map (renderBlock textures) (gamestate ^. blocks)
 
 

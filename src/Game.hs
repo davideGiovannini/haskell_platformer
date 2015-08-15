@@ -41,7 +41,7 @@ makeLenses ''GameState
 
 
 initialState :: GameState
-initialState = GameState  (Player.Player (-285,-55) (0,0)) [
+initialState = GameState  (Player.newPlayer (-285,-55) (0, -4800)) ([
                                         Blocks.SandCenter (-285,-205),
                                         Blocks.SandTop (-285,-135),
                                         Blocks.SandCenter (-215,-205),
@@ -49,8 +49,22 @@ initialState = GameState  (Player.Player (-285,-55) (0,0)) [
                                         Blocks.SandTop (145,-205),
                                         Blocks.SandTop (215,-205),
                                         Blocks.SandTop (285,-205),
-                                        Blocks.Box      (285,-135)
-                                        ]
+                                        Blocks.Box      (285,-135)]
+
+                                        ++
+--temp to close hole
+                                        [
+                                        Blocks.SandTop (-285,-275),
+                                        Blocks.SandTop (-215,-275),
+                                        Blocks.SandTop (-145,-275),
+                                        Blocks.SandTop (-75,-275),
+                                        Blocks.SandTop (-5,-275),
+                                        Blocks.SandTop (65,-275),
+                                        Blocks.SandTop (135,-275),
+                                        Blocks.SandTop (205,-275),
+                                        Blocks.SandTop (275,-275)
+
+                                        ])
 
 
 
@@ -66,9 +80,56 @@ updateDT acc input = do
                         return $ mod' acc deltaTime
 
 update :: (Bool, Bool, Bool, Bool) -> State GameState ()
-update input =
-    player %= execState (Player.update input deltaTimeF)
+update input = do
+           currPlayer <- use player
+           let player' = execState (Player.update input deltaTimeF) currPlayer
+           if inBounds player' then
+            player .= player'
+           else
+             do
+               player.Player.position .=  (currPlayer ^. Player.position)
+               player.Player.velocity .= (0, 0)
 
+           tiles <- use blocks
+           player %= collision tiles (currPlayer ^. Player.position._2)
+
+           clampBounds
+
+
+inBounds :: Player.Player -> Bool
+inBounds p =
+    x> -w2 && x < w2 && y > -h2 && y< h2
+
+    where (x, y)   = p ^. Player.position
+          (w2, h2) = (fromIntegral width /2, fromIntegral height /2)
+
+
+clampBounds :: State GameState ()
+clampBounds = do
+               player.Player.position._1 %= \ x -> max (-w2) (min w2 x)
+               player.Player.position._2 %= \ y -> max (-h2) (min h2 y)
+          where
+               (w2, h2) = (fromIntegral width /2, fromIntegral height /2)
+
+
+collision :: [Blocks.Block] -> Float -> Player.Player -> Player.Player
+collision tiles oldY player' = if falling && any shouldStopFall tiles then
+                            ((player' & Player.velocity._2 .~ 0) & Player.onGround .~ True) & Player.position._2 .~ oldY
+
+                          else
+                          player'
+    where falling = player' ^. Player.velocity._2 <0
+          playerAnchor = Player.anchorPoint player'
+          shouldStopFall block  = insideSquare playerAnchor (block ^. Blocks.pos) Blocks.blockSize
+
+
+
+
+
+
+insideSquare :: (Float, Float) -> (Float, Float) -> Float -> Bool
+insideSquare (x, y) (sx, sy) w = x > sx-w2 && x < sx+w2 && y > sy-w2 && y < sy+w2
+                where w2 = w/2
 
 
 
