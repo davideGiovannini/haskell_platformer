@@ -6,6 +6,7 @@ module Game (
         height,
         deltaTime,
         player,
+        blocks,
         updateDT
         )
 where
@@ -14,6 +15,7 @@ import           Control.Lens
 import           Control.Monad.State.Strict
 import           Data.Fixed                 (div', mod')
 
+import qualified Game.Blocks                as Blocks
 import qualified Game.Player                as Player
 
 ------------------------------------------------
@@ -30,8 +32,8 @@ deltaTimeF = 0.01
 
 
 data GameState = GameState {
-                  _player :: Player.Player
-
+                  _player :: Player.Player,
+                  _blocks :: [Blocks.Block]
 
                  } deriving Show
 
@@ -39,7 +41,16 @@ makeLenses ''GameState
 
 
 initialState :: GameState
-initialState = GameState $ Player.Player (0,0) (0,0)
+initialState = GameState  (Player.Player (-285,-55) (0,0)) [
+                                        Blocks.SandCenter (-285,-205),
+                                        Blocks.SandTop (-285,-135),
+                                        Blocks.SandCenter (-215,-205),
+                                        Blocks.SandTop (-215,-135),
+                                        Blocks.SandTop (145,-205),
+                                        Blocks.SandTop (215,-205),
+                                        Blocks.SandTop (285,-205),
+                                        Blocks.Box      (285,-135)
+                                        ]
 
 
 
