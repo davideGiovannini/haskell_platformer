@@ -42,6 +42,6 @@ executable HaskellPlatformer
                      , htiled
                      , OpenGL
                      , lens
-  ghc-options:         -Wall
+  ghc-options:         -Wall -O2
   hs-source-dirs:      src
   default-language:    Haskell2010

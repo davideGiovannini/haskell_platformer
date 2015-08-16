@@ -94,10 +94,8 @@ collision tiles oldY = do
         fallingSpeed <-  use $ Player.velocity._2
         anchorPoint  <- Player.anchorPoint <$> get
 
-        if fallingSpeed < 0  && any (shouldStopFall anchorPoint) tiles then do
-            Player.velocity._2 .= 0
-            Player.onGround    .= True
-            Player.position._2 .= oldY
+        if fallingSpeed < 0  && any (shouldStopFall anchorPoint) tiles then
+            Player.landOn oldY
         else
             Player.onGround    .= False
     where
