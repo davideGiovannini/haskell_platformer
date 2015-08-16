@@ -52,11 +52,11 @@ renderBlock textures (Blocks.Box (x,y)) =  translate x y (textures ^.boxT)
 
 
 loadTextures :: IO Textures
-loadTextures = do
-    background_ <- fromJust <$> loadJuicy "assets/uncolored_peaks.png"
-    player_ <- fromJust <$> loadJuicy "assets/alienBlue.png"
-    sand_   <- fromJust <$> loadJuicy "assets/sandCenter.png"
-    sandtop_<- fromJust <$> loadJuicy "assets/sandMid.png"
-    box_    <- fromJust <$> loadJuicy "assets/box.png"
+loadTextures =
+    Textures <$> load "assets/uncolored_peaks.png"
+             <*> load "assets/alienBlue.png"
+             <*> load "assets/sandCenter.png"
+             <*> load "assets/sandMid.png"
+             <*> load "assets/box.png"
+    where load path = fromJust <$> loadJuicy path
 
-    return $ Textures background_ player_ sand_ sandtop_ box_

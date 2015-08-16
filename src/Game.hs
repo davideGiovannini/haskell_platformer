@@ -73,8 +73,6 @@ initialState = GameState  (Player.newPlayer (-285,-55) (0, -4800)) ([
 
 
 updateDT :: Double -> (Bool, Bool, Bool, Bool) -> State GameState Double
-{-updateDT acc input = state $ \game ->-}
-                                {-(mod' acc deltaTime, execState (replicateM (div' acc deltaTime) (update input) ) game)-}
 updateDT acc input = do
                         replicateM_ (div' acc deltaTime) (update input)
                         return $ mod' acc deltaTime
@@ -90,7 +88,9 @@ update input = do
                player.Player.position .=  (currPlayer ^. Player.position)
                player.Player.velocity .= (0, 0)
 
-           tiles <- use blocks
+           let useInCollision block = case block of Blocks.Box _ -> True; Blocks.SandTop _ -> True; _ -> False
+           tiles <- state $ \x -> (x ^..  blocks.traversed.filtered useInCollision, x)
+
            player %= collision tiles (currPlayer ^. Player.position._2)
 
            clampBounds
@@ -120,7 +120,7 @@ collision tiles oldY player' = if falling && any shouldStopFall tiles then
                           player'
     where falling = player' ^. Player.velocity._2 <0
           playerAnchor = Player.anchorPoint player'
-          shouldStopFall block  = insideSquare playerAnchor (block ^. Blocks.pos) Blocks.blockSize
+          shouldStopFall block  = topOfSquare playerAnchor (block ^. Blocks.pos) Blocks.blockSize
 
 
 
@@ -131,5 +131,9 @@ insideSquare :: (Float, Float) -> (Float, Float) -> Float -> Bool
 insideSquare (x, y) (sx, sy) w = x > sx-w2 && x < sx+w2 && y > sy-w2 && y < sy+w2
                 where w2 = w/2
 
+topOfSquare :: (Float, Float) -> (Float, Float) -> Float -> Bool
+topOfSquare (x, y) (sx, sy) w = x > sx-w2 && x < sx+w2 && y > sy+w4 && y < sy+w2
+                where w2 = w/2
+                      w4 = w/4
 
 
