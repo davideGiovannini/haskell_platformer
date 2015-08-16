@@ -8,6 +8,7 @@ module Rendering (
 where
 
 import           Graphics.Gloss
+import           Graphics.Gloss.Data.ViewPort
 import           Graphics.Gloss.Rendering as RS
 import           "GLFW-b" Graphics.UI.GLFW         as GLFW
 
@@ -15,6 +16,8 @@ import           Data.Maybe               (fromJust)
 import           Game
 import qualified Game.Blocks              as Blocks
 import qualified Game.Player as Pl
+
+import Control.Monad.State.Strict
 
 import           Control.Lens
 import           Graphics.Gloss.Juicy
@@ -29,21 +32,22 @@ data Textures = Textures {
                         _sandTopT        :: Picture,
                         _boxT            :: Picture
 
-                        }deriving Show
+                        } deriving Show
 
 makeLenses ''Textures
 
 
 
-renderFrame :: Textures -> GameState -> Window -> RS.State -> IO ()
-renderFrame textures gamestate window glossState = do
-   displayPicture (width, height) black glossState 1.0 $ Pictures ( [textures ^. backgroundT
-                                                                  ] ++ picBlocks ++ picPlayer )
-   swapBuffers window
+renderFrame :: Textures ->  Window -> RS.State -> StateT GameState IO ()
+renderFrame textures window glossState = do
+    picPlayer <- renderPlayer textures <$> use player
+    picBlocks <- map (renderBlock textures) <$> use blocks
+    viewp     <- use viewport
 
-   where
-         picPlayer = [renderPlayer textures (gamestate ^. player )]
-         picBlocks = map (renderBlock textures) (gamestate ^. blocks)
+    lift $ displayPicture (width, height) black glossState (viewPortScale viewp) $
+        Pictures (textures ^. backgroundT:[applyViewPortToPicture viewp(Pictures $ picBlocks ++ [picPlayer])])
+    lift $ swapBuffers window
+
 
 
 renderPlayer :: Textures -> Pl.Player -> Picture

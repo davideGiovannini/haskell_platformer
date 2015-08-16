@@ -7,6 +7,7 @@ module Game (
         deltaTime,
         player,
         blocks,
+        viewport,
         updateDT
         )
 where
@@ -17,6 +18,8 @@ import           Data.Fixed                 (div', mod')
 
 import qualified Game.Blocks                as Blocks
 import qualified Game.Player                as Player
+
+import Graphics.Gloss.Data.ViewPort (ViewPort, viewPortInit)
 
 
 ------------------------------------------------
@@ -36,27 +39,28 @@ gravity = (0, -4800)
 
 
 data GameState = GameState {
-                  _player :: Player.Player,
-                  _blocks :: [Blocks.Block]
+                  _viewport :: ViewPort,
+                  _player   :: Player.Player,
+                  _blocks   :: [Blocks.Block]
 
-                 } deriving Show
+                 }
 
 makeLenses ''GameState
 
 
 initialState :: GameState
-initialState = GameState  (Player.newPlayer (-285,-55) gravity) [
-                                        Blocks.Box      (-285,5),
-                                        Blocks.Box      (-285,-65),
-                                        Blocks.SandCenter (-285,-205),
-                                        Blocks.SandTop (-285,-135),
-                                        Blocks.SandCenter (-215,-205),
-                                        Blocks.SandTop (-215,-135),
-                                        Blocks.SandTop (75,-205),
-                                        Blocks.SandTop (145,-205),
-                                        Blocks.SandTop (215,-205),
-                                        Blocks.SandTop (285,-205),
-                                        Blocks.Box      (285,-135)]
+initialState = GameState viewPortInit (Player.newPlayer (-285,-55) gravity) [
+                                                                                Blocks.Box      (-285,5),
+                                                                                Blocks.Box      (-285,-65),
+                                                                                Blocks.SandCenter (-285,-205),
+                                                                                Blocks.SandTop (-285,-135),
+                                                                                Blocks.SandCenter (-215,-205),
+                                                                                Blocks.SandTop (-215,-135),
+                                                                                Blocks.SandTop (75,-205),
+                                                                                Blocks.SandTop (145,-205),
+                                                                                Blocks.SandTop (215,-205),
+                                                                                Blocks.SandTop (285,-205),
+                                                                                Blocks.Box      (285,-135)]
 
 
 

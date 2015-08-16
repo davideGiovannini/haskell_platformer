@@ -39,7 +39,7 @@ loop window glossState texture acc = do
             put newgamestate
 
 
-            lift $ renderFrame texture newgamestate window glossState
+            renderFrame texture window glossState
             unless k $ loop window glossState texture acc'
 
 
@@ -49,9 +49,9 @@ getInputs win = do
             threadDelay 20000
             pollEvents
             k <- keyIsPressed win Key'Escape
-            l <- keyIsPressed win Key'Left
-            r <- keyIsPressed win Key'Right
-            u <- keyIsPressed win Key'Up
-            d <- keyIsPressed win Key'Down
+            l <- keyIsPressed win Key'A
+            r <- keyIsPressed win Key'D
+            u <- (||) <$> keyIsPressed win Key'W <*> keyIsPressed win Key'Space
+            d <- keyIsPressed win Key'S
             return (k,l,r,u,d)
 
