@@ -30,7 +30,7 @@ playerBounds :: (Float, Float)
 playerBounds  = (66, 92)
 
 speed :: Float
-speed =  100
+speed = 100
 
 maxWalkSpeed :: Float
 maxWalkSpeed = 500

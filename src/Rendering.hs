@@ -16,6 +16,7 @@ import           Data.Maybe               (fromJust)
 import           Game
 import qualified Game.Blocks              as Blocks
 import qualified Game.Player as Pl
+import qualified Data.Vector as Vector
 
 import Control.Monad.State.Strict
 
@@ -28,6 +29,7 @@ data Textures = Textures {
                         _alienBlueT      :: Picture,
                         _alienBlueJumpT  :: Picture,
                         _alienBlueStandT :: Picture,
+                        _alienBlueWalkT  :: Vector.Vector Picture,
                         _sandcenterT     :: Picture,
                         _sandTopT        :: Picture,
                         _boxT            :: Picture
@@ -40,7 +42,8 @@ makeLenses ''Textures
 
 renderFrame :: Textures ->  Window -> RS.State -> StateT GameState IO ()
 renderFrame textures window glossState = do
-    picPlayer <- renderPlayer textures <$> use player
+    time      <- use totalTime
+    picPlayer <- renderPlayer textures time <$> use player
     picBlocks <- map (renderBlock textures) <$> use blocks
     viewp     <- use viewport
 
@@ -50,15 +53,15 @@ renderFrame textures window glossState = do
 
 
 
-renderPlayer :: Textures -> Pl.Player -> Picture
-renderPlayer textures _player = translate xpos ypos (facing (textures ^. picture))
+renderPlayer :: Textures -> Double -> Pl.Player -> Picture
+renderPlayer textures time _player = translate xpos ypos (facing picture)
             where (xpos, ypos) = _player ^. Pl.position
                   moving  = abs(_player ^. Pl.velocity._1) > 1
                   onground = _player ^. Pl.onGround
                   picture
-                      | moving && onground = alienBlueStandT
-                      | onground           = alienBlueT
-                      | otherwise          = alienBlueJumpT
+                      | moving && onground = (textures ^. alienBlueWalkT) Vector.! mod (round (20*time) ) 9
+                      | onground           = textures ^. alienBlueT
+                      | otherwise          = textures ^. alienBlueJumpT
                   facing pic = if (_player ^. Pl.velocity._1) < -1 then scale (-1) 1 pic else pic
 
 
@@ -74,8 +77,12 @@ loadTextures =
              <*> load "assets/alienBlue.png"
              <*> load "assets/alienBlue_jump.png"
              <*> load "assets/alienBlue_stand.png"
+             <*> sequenceA (fmap load (Vector.fromList ["assets/alienBlueWalk/p2_walk0"++ show (n::Int) ++ ".png" | n <- [1..9]]))
              <*> load "assets/sandCenter.png"
              <*> load "assets/sandMid.png"
              <*> load "assets/box.png"
     where load path = fromJust <$> loadJuicy path
+
+
+
 

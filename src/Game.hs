@@ -8,6 +8,7 @@ module Game (
         player,
         blocks,
         viewport,
+        totalTime,
         updateDT
         )
 where
@@ -39,6 +40,7 @@ gravity = (0, -4800)
 
 
 data GameState = GameState {
+                  _totalTime:: Double,
                   _viewport :: ViewPort,
                   _player   :: Player.Player,
                   _blocks   :: [Blocks.Block]
@@ -49,7 +51,7 @@ makeLenses ''GameState
 
 
 initialState :: GameState
-initialState = GameState viewPortInit (Player.newPlayer (-285,-55) gravity) [
+initialState = GameState 0 viewPortInit (Player.newPlayer (-285,-55) gravity) [
                                                                                 Blocks.Box      (-285,5),
                                                                                 Blocks.Box      (-285,-65),
                                                                                 Blocks.SandCenter (-285,-205),
@@ -72,6 +74,8 @@ updateDT acc input = do
 
 update :: (Bool, Bool, Bool, Bool) -> State GameState ()
 update input = do
+           totalTime += deltaTime
+
            currPlayer <- use player
            player .= execState (Player.update input deltaTimeF) currPlayer
 
