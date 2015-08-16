@@ -14,18 +14,20 @@ import           "GLFW-b" Graphics.UI.GLFW         as GLFW
 import           Data.Maybe               (fromJust)
 import           Game
 import qualified Game.Blocks              as Blocks
-import           Game.Player
+import qualified Game.Player as Pl
 
 import           Control.Lens
 import           Graphics.Gloss.Juicy
 
 
 data Textures = Textures {
-                        _backgroundT :: Picture,
-                        _playerT     :: Picture,
-                        _sandcenterT :: Picture,
-                        _sandTopT    :: Picture,
-                        _boxT        :: Picture
+                        _backgroundT     :: Picture,
+                        _alienBlueT      :: Picture,
+                        _alienBlueJumpT  :: Picture,
+                        _alienBlueStandT :: Picture,
+                        _sandcenterT     :: Picture,
+                        _sandTopT        :: Picture,
+                        _boxT            :: Picture
 
                         }deriving Show
 
@@ -39,10 +41,21 @@ renderFrame textures gamestate window glossState = do
                                                                   ] ++ picBlocks ++ picPlayer )
    swapBuffers window
 
-   where (xpos, ypos) = gamestate ^. player.position
-         picPlayer = [translate xpos ypos  (textures ^. playerT)]
+   where
+         picPlayer = [renderPlayer textures (gamestate ^. player )]
          picBlocks = map (renderBlock textures) (gamestate ^. blocks)
 
+
+renderPlayer :: Textures -> Pl.Player -> Picture
+renderPlayer textures _player = translate xpos ypos (facing (textures ^. picture))
+            where (xpos, ypos) = _player ^. Pl.position
+                  moving  = abs(_player ^. Pl.velocity._1) > 1
+                  onground = _player ^. Pl.onGround
+                  picture
+                      | moving && onground = alienBlueStandT
+                      | onground           = alienBlueT
+                      | otherwise          = alienBlueJumpT
+                  facing pic = if (_player ^. Pl.velocity._1) < -1 then scale (-1) 1 pic else pic
 
 
 renderBlock :: Textures -> Blocks.Block -> Picture
@@ -55,6 +68,8 @@ loadTextures :: IO Textures
 loadTextures =
     Textures <$> load "assets/uncolored_peaks.png"
              <*> load "assets/alienBlue.png"
+             <*> load "assets/alienBlue_jump.png"
+             <*> load "assets/alienBlue_stand.png"
              <*> load "assets/sandCenter.png"
              <*> load "assets/sandMid.png"
              <*> load "assets/box.png"
