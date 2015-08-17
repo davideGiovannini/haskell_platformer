@@ -15,12 +15,12 @@ where
 
 import           Control.Lens
 import           Control.Monad.State.Strict
-import           Data.Fixed                 (div', mod')
+import           Data.Fixed                   (div', mod')
 
-import qualified Game.Blocks                as Blocks
-import qualified Game.Player                as Player
+import qualified Game.Blocks                  as Blocks
+import qualified Game.Player                  as Player
 
-import Graphics.Gloss.Data.ViewPort (ViewPort, viewPortInit)
+import           Graphics.Gloss.Data.ViewPort (ViewPort, viewPortInit)
 
 
 ------------------------------------------------
@@ -41,9 +41,9 @@ gravity = (0, -4800)
 
 data GameState = GameState {
                   _totalTime:: Double,
-                  _viewport :: ViewPort,
-                  _player   :: Player.Player,
-                  _blocks   :: [Blocks.Block]
+                  _viewport  :: ViewPort,
+                  _player    :: Player.Player,
+                  _blocks    :: [Blocks.Block]
 
                  }
 

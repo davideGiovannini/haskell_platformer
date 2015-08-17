@@ -12,7 +12,7 @@ import           GLFWUtils
 
 import           Rendering
 
-import Control.Monad.Reader
+import           Control.Monad.Reader
 
 windowWidth, windowHeight :: Int
 windowWidth  = 2*width  -- 1280
