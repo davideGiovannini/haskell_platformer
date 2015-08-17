@@ -12,6 +12,8 @@ import           GLFWUtils
 
 import           Rendering
 
+import Control.Monad.Reader
+
 windowWidth, windowHeight :: Int
 windowWidth  = 2*width  -- 1280
 windowHeight = 2*height -- 960
@@ -20,13 +22,13 @@ windowHeight = 2*height -- 960
 main :: IO ()
 main = do
     glossState <- initState
-    textures   <- loadTextures
+    resources   <- loadResources
     withWindow windowWidth windowHeight width height "Game-Demo" $ \win -> do
-          _ <- runStateT (loop win glossState textures 0) initialState
+          _ <- runStateT (loop win glossState resources 0) initialState
           exitSuccess
 
-loop :: Window -> RS.State -> Textures -> Double-> StateT GameState IO ()
-loop window glossState texture acc = do
+loop :: Window -> RS.State -> Resources -> Double-> StateT GameState IO ()
+loop window glossState resources acc = do
             dt <- lift $  fromJust <$> getTime
             lift $ setTime 0
 
@@ -39,8 +41,8 @@ loop window glossState texture acc = do
             put newgamestate
 
 
-            renderFrame texture window glossState
-            unless k $ loop window glossState texture acc'
+            lift $ runReaderT (renderFrame resources window glossState) newgamestate
+            unless k $ loop window glossState resources acc'
 
 
 

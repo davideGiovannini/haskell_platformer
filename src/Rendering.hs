@@ -1,9 +1,8 @@
 {-# LANGUAGE PackageImports  #-}
-{-# LANGUAGE TemplateHaskell #-}
 module Rendering (
     renderFrame,
-    Textures,
-    loadTextures
+    Resources,
+    loadResources
     )
 where
 
@@ -18,71 +17,104 @@ import qualified Game.Blocks              as Blocks
 import qualified Game.Player as Pl
 import qualified Data.Vector as Vector
 
-import Control.Monad.State.Strict
+import Control.Monad.Reader
 
 import           Control.Lens
 import           Graphics.Gloss.Juicy
 
+import qualified Data.Map.Strict as Map
+import Data.Map.Strict (Map)
 
-data Textures = Textures {
-                        _backgroundT     :: Picture,
-                        _alienBlueT      :: Picture,
-                        _alienBlueJumpT  :: Picture,
-                        _alienBlueStandT :: Picture,
-                        _alienBlueWalkT  :: Vector.Vector Picture,
-                        _sandcenterT     :: Picture,
-                        _sandTopT        :: Picture,
-                        _boxT            :: Picture
+type Textures = Map Texture Picture
+type Animations = Map Animation (Vector.Vector Picture)
 
-                        } deriving Show
+tlookup :: Texture -> Textures -> Picture
+tlookup texture textures = fromJust $ Map.lookup texture textures
 
-makeLenses ''Textures
+alookup :: Animation -> Animations -> Vector.Vector Picture
+alookup anim anims = fromJust $ Map.lookup anim anims
+
+data Texture = Background
+             | AlienBlue
+             | AlienBlueJump
+             | Sandcenter
+             | SandTop
+             | Box
+             deriving (Ord, Eq, Show)
+
+data Animation = AlienBlueWalk
+               deriving (Ord, Eq, Show)
 
 
+data Resources = Resources {
+                            _animations :: Animations,
+                            _textures   :: Textures
+                        }
 
-renderFrame :: Textures ->  Window -> RS.State -> StateT GameState IO ()
-renderFrame textures window glossState = do
-    time      <- use totalTime
-    picPlayer <- renderPlayer textures time <$> use player
-    picBlocks <- map (renderBlock textures) <$> use blocks
-    viewp     <- use viewport
+
+renderFrame :: Resources ->  Window -> RS.State -> ReaderT GameState IO ()
+renderFrame resources window glossState = do
+    time      <- asks (^. totalTime)
+    picPlayer <- renderPlayer resources time <$> asks (^. player)
+    picBlocks <- map (renderBlock resources) <$> asks (^.  blocks)
+    viewp     <- asks (^. viewport)
 
     lift $ displayPicture (width, height) black glossState (viewPortScale viewp) $
-        Pictures (textures ^. backgroundT:[applyViewPortToPicture viewp(Pictures $ picBlocks ++ [picPlayer])])
+        Pictures (tlookup Background (_textures resources) :[applyViewPortToPicture viewp(Pictures $ picBlocks ++ [picPlayer])])
     lift $ swapBuffers window
 
 
 
-renderPlayer :: Textures -> Double -> Pl.Player -> Picture
-renderPlayer textures time _player = translate xpos ypos (facing picture)
+
+renderPlayer :: Resources -> Double -> Pl.Player -> Picture
+renderPlayer resources time _player = translate xpos ypos (facing picture)
             where (xpos, ypos) = _player ^. Pl.position
                   moving  = abs(_player ^. Pl.velocity._1) > 1
                   onground = _player ^. Pl.onGround
                   picture
-                      | moving && onground = (textures ^. alienBlueWalkT) Vector.! mod (round (20*time) ) 9
-                      | onground           = textures ^. alienBlueT
-                      | otherwise          = textures ^. alienBlueJumpT
+                      | moving && onground = alookup AlienBlueWalk (_animations resources) Vector.! mod (round (20*time) ) 9
+                      | onground           = tlookup AlienBlue (_textures resources)
+                      | otherwise          = tlookup AlienBlueJump (_textures resources)
                   facing pic = if (_player ^. Pl.velocity._1) < -1 then scale (-1) 1 pic else pic
 
 
-renderBlock :: Textures -> Blocks.Block -> Picture
-renderBlock textures (Blocks.SandTop (x,y)) =  translate x y (textures ^.sandTopT)
-renderBlock textures (Blocks.SandCenter (x,y)) =  translate x y (textures ^.sandcenterT)
-renderBlock textures (Blocks.Box (x,y)) =  translate x y (textures ^.boxT)
+renderBlock :: Resources -> Blocks.Block -> Picture
+renderBlock resources (Blocks.SandTop (x,y))    =  translate x y (tlookup SandTop (_textures resources))
+renderBlock resources (Blocks.SandCenter (x,y)) =  translate x y (tlookup Sandcenter (_textures resources))
+renderBlock resources (Blocks.Box (x,y))        =  translate x y (tlookup Box (_textures resources))
 
+
+loadPng :: String -> IO Picture
+loadPng path = fromJust <$> loadJuicy path
 
 loadTextures :: IO Textures
 loadTextures =
-    Textures <$> load "assets/uncolored_peaks.png"
-             <*> load "assets/alienBlue.png"
-             <*> load "assets/alienBlue_jump.png"
-             <*> load "assets/alienBlue_stand.png"
-             <*> sequenceA (fmap load (Vector.fromList ["assets/alienBlueWalk/p2_walk0"++ show (n::Int) ++ ".png" | n <- [1..9]]))
-             <*> load "assets/sandCenter.png"
-             <*> load "assets/sandMid.png"
-             <*> load "assets/box.png"
-    where load path = fromJust <$> loadJuicy path
+    Map.fromList <$> mapM fun [(Background, "assets/uncolored_peaks.png"),
+                               (AlienBlue, "assets/alienBlue.png"),
+                               (AlienBlueJump, "assets/alienBlue_jump.png"),
+                               (Sandcenter, "assets/sandCenter.png"),
+                               (SandTop, "assets/sandMid.png"),
+                               (Box, "assets/box.png")
+                              ]
+    where
+          fun (texture, pic) = do
+                             p <- loadPng pic
+                             return (texture, p)
 
+loadAnimations :: IO Animations
+loadAnimations =
+    Map.fromList <$> mapM fun [
+                                (AlienBlueWalk, Vector.fromList ["assets/alienBlueWalk/p2_walk0"++ show (n::Int) ++ ".png" | n <- [1..9]])
+                              ]
+    where fun (texture, ls) = do
+                       pics <- mapM loadPng ls
+                       return (texture, pics)
+
+loadResources :: IO Resources
+loadResources = do
+    textures <- loadTextures
+    animations <- loadAnimations
+    return $ Resources animations textures
 
 
 
