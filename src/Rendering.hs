@@ -16,7 +16,7 @@ import qualified Data.Vector                  as Vector
 import           Game
 import           Game.Blocks                  (Block)
 import qualified Game.Blocks                  as Blocks
-import           Game.Levels                  (getTiles)
+import           Game.Levels                  (tiles, bounds)
 import           Game.Player                  (Player)
 import qualified Game.Player                  as Pl
 
@@ -51,11 +51,15 @@ renderFrame :: Resources ->  Window -> RS.State -> ReaderT GameState IO ()
 renderFrame resources@(textures, _) window glossState = do
     time      <- asks (^. totalTime)
     picPlayer <- renderPlayer resources time <$> asks (^. player)
-    picBlocks <- foldMap (renderBlock resources) <$> (getTiles <$>  asks (^. level))
+    picBlocks <- foldMap (renderBlock resources) <$> asks (^. level.tiles)
     viewp     <- asks (^. viewport)
+    (w, h) <- asks (^. level.bounds)
 
     lift $ displayPicture (width, height) black glossState (viewPortScale viewp) $
-        Pictures (textures Background:translate 200 150 (textures Sun) :[applyViewPortToPicture viewp(Pictures $ picBlocks:[picPlayer])])
+        Pictures (textures Background:
+                  applyViewPortToPicture viewp (rectangleWire  w h):
+                  translate 200 150 (textures Sun):
+                  [applyViewPortToPicture viewp(Pictures $ picBlocks:[picPlayer])])
     lift $ swapBuffers window
 
 

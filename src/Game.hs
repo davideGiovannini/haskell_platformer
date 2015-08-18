@@ -22,11 +22,13 @@ import qualified Data.Vector                  as Vector (filter)
 
 import           Game.Blocks                  (Block)
 import qualified Game.Blocks                  as Blocks
-import           Game.Levels                  (Level (getTiles), initialLevel)
+import           Game.Levels                  (Level, initialLevel, tiles, bounds)
 import           Game.Player                  (Player)
 import qualified Game.Player                  as Player
 
-import           Graphics.Gloss.Data.ViewPort (ViewPort, viewPortInit)
+import           Graphics.Gloss.Data.Vector   (magV, mulSV)
+
+import           Graphics.Gloss.Data.ViewPort (ViewPort (..), viewPortInit)
 
 
 ------------------------------------------------
@@ -74,29 +76,33 @@ update input = do
            player .= execState (Player.update input deltaTimeF) currPlayer
 
            let useInCollision block = case block of Blocks.Box _ -> True; Blocks.SandTop _ -> True; _ -> False
-           tiles <- gets $ \gamestate -> Vector.filter useInCollision (getTiles $ gamestate ^.  level)
+           solidtiles <- gets $ \gamestate -> Vector.filter useInCollision (gamestate ^.  level.tiles)
 
-           player %= execState (collision tiles (currPlayer ^. Player.position._2))
-
-           player %= execState wrapAroundBounds
+           player %= execState (collision solidtiles (currPlayer ^. Player.position._2))
 
 
+           levelBounds <- use $ level.bounds
+           player %= execState (wrapAroundBounds levelBounds)
 
 
-wrapAroundBounds :: State Player ()
-wrapAroundBounds = do
+           updatedPlayer <- use player
+           viewport %= followPlayer updatedPlayer
+
+
+wrapAroundBounds :: (Float, Float) -> State Player ()
+wrapAroundBounds (w, h)= do
                Player.position._1 %= \ x -> if x < -w2 then w2 else if x > w2 then -w2 else x
                Player.position._2 %= \ y -> if y < -h2 then h2 else if y > h2 then -h2 else y
           where
-               (w2, h2) = (fromIntegral width /2, fromIntegral height /2)
+               (w2, h2) = (w/2, h/2)
 
 
 collision :: Vector Block -> Float -> State Player ()
-collision tiles oldY = do
+collision solidtiles oldY = do
         fallingSpeed <-  use $ Player.velocity._2
         anchorPoint  <- Player.anchorPoint <$> get
 
-        if fallingSpeed < 0  && any (shouldStopFall anchorPoint) tiles then
+        if fallingSpeed < 0  && any (shouldStopFall anchorPoint) solidtiles then
             Player.landOn oldY
         else
             Player.onGround    .= False
@@ -114,5 +120,25 @@ topOfSquare :: (Float, Float) -> (Float, Float) -> Float -> Bool
 topOfSquare (x, y) (sx, sy) w = x > sx-w2 && x < sx+w2 && y > sy+w4 && y < sy+w2
                 where w2 = w/2
                       w4 = w/4
+
+
+
+followPlayer ::  Player -> ViewPort -> ViewPort
+followPlayer _player (ViewPort vV@(x, y) r s) =
+                            let (tx, ty) = mulSV (-1) (_player ^. Player.position)
+                                distanceV@(dx, dy) = (tx-x, ty-y)
+                                magDist = magV distanceV
+                                onground = _player ^. Player.onGround
+                                (xx, yy) =  if magDist > 1 then
+                                                if onground || magDist < 60 then
+                                                    (x+(dx*deltaTimeF), y+(dy*deltaTimeF))
+                                                else
+                                                    (x+(dx*deltaTimeF), y)
+                                            else
+                                            vV
+                            in
+                            ViewPort (xx, yy)  r s
+
+
 
 

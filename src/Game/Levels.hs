@@ -1,6 +1,9 @@
+{-# LANGUAGE TemplateHaskell #-}
 module Game.Levels
    (
-       Level(getTiles),
+       Level,
+       bounds,
+       tiles,
        initialLevel
    )
 where
@@ -8,26 +11,37 @@ where
 
 
 
-import           Data.Vector (Vector)
-import qualified Data.Vector as Vector
+import           Control.Lens hiding (Level)
+import           Data.Vector  (Vector)
+import qualified Data.Vector  as Vector
 import           Game.Blocks
 
-newtype Level = Level {getTiles :: Vector Block }
+data Level = Level {
+                     _bounds :: (Float, Float),
+                     _tiles  :: Vector Block
+                   }
+
+makeLenses ''Level
 
 
 
 initialLevel :: Level
-initialLevel = Level $ Vector.fromList [
-                                        Box      (-285,5),
-                                        Box      (-285,-65),
-                                        SandCenter (-285,-205),
-                                        SandTop (-285,-135),
-                                        SandCenter (-215,-205),
-                                        SandTop (-215,-135),
-                                        SandTop (75,-205),
-                                        SandTop (145,-205),
-                                        SandTop (215,-205),
-                                        SandTop (285,-205),
-                                        Box      (285,-135)
-                                       ]
+initialLevel = Level (1200, 600) (Vector.fromList $ [
+                                        Box      (-355,5),
+                                        Box      (-355,-65),
+
+                                        Box      (355,-135)
+                                        ] ++ concat[
+                                         drawSquare x (-205) | x <- [5,75..505]]
+                                         ++ concat
+                                         [drawSquare x (-135) | x <- [-565,(-495)..(-355)]]
+                                         ++ [SandCenter(x,-275) | x <- [-565,(-495)..(-285)]]
+                                        )
+
+
+
+drawSquare :: Float -> Float -> [Block]
+drawSquare x y = [SandTop (x, y), SandTop(x+70, y), SandCenter(x,y-70), SandCenter(x+70, y-70)]
+
+
 
