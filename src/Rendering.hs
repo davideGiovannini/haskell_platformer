@@ -29,6 +29,7 @@ import           Graphics.Gloss.Juicy
 import qualified Data.Map.Strict              as Map
 
 import qualified Game.Backgrounds as B (BackgroundElement(..), Background(..))
+import Data.Monoid ((<>))
 
 type Textures = Texture -> Picture
 type Animations = Animation -> Vector.Vector Picture
@@ -65,10 +66,11 @@ renderFrame resources window glossState = do
     background_ <- asks (^.level.background)
 
     lift $ displayPicture (width, height) (B._fillColor background_) glossState (viewPortScale viewp) $
-        Pictures (renderBackground resources background_ viewp: -- Draw background
-
-                  applyViewPortToPicture viewp (rectangleWire  w h): -- Draw level boundaries
-                  [applyViewPortToPicture viewp(Pictures $ picBlocks:[picPlayer])]) -- Draw blocks and player
+                renderBackground resources background_ viewp -- Draw background
+                <>
+                applyViewPortToPicture viewp (rectangleWire  w h) -- Draw level boundaries
+                <>
+                applyViewPortToPicture viewp (picBlocks<>picPlayer) -- Draw blocks and player
     lift $ swapBuffers window
 
 

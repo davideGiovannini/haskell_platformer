@@ -1,0 +1,6 @@
+Comandi per profiling (prob meglio senza optimization)
+
+    ca clean
+    ca configure --enable-executable-profiling --enable-optimization=2 --enable-benchmarks --ghc-option -fprof-auto
+    ca build
+    ./dist/build/HaskellPlatformer/HaskellPlatformer +RTS -p -hy -RTS
