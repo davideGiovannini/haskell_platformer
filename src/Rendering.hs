@@ -14,7 +14,10 @@ import           "GLFW-b" Graphics.UI.GLFW             as GLFW
 import           Data.Maybe                   (fromJust)
 import qualified Data.Vector                  as Vector
 import           Game
+import           Game.Blocks                  (Block)
 import qualified Game.Blocks                  as Blocks
+import           Game.Levels                  (getTiles)
+import           Game.Player                  (Player)
 import qualified Game.Player                  as Pl
 
 import           Control.Monad.Reader
@@ -48,17 +51,16 @@ renderFrame :: Resources ->  Window -> RS.State -> ReaderT GameState IO ()
 renderFrame resources@(textures, _) window glossState = do
     time      <- asks (^. totalTime)
     picPlayer <- renderPlayer resources time <$> asks (^. player)
-    picBlocks <- map (renderBlock resources) <$> asks (^.  blocks)
+    picBlocks <- foldMap (renderBlock resources) <$> (getTiles <$>  asks (^. level))
     viewp     <- asks (^. viewport)
 
     lift $ displayPicture (width, height) black glossState (viewPortScale viewp) $
-        Pictures (textures Background:translate 200 150 (textures Sun) :[applyViewPortToPicture viewp(Pictures $ picBlocks ++ [picPlayer])])
+        Pictures (textures Background:translate 200 150 (textures Sun) :[applyViewPortToPicture viewp(Pictures $ picBlocks:[picPlayer])])
     lift $ swapBuffers window
 
 
 
-
-renderPlayer :: Resources -> Double -> Pl.Player -> Picture
+renderPlayer :: Resources -> Double -> Player -> Picture
 renderPlayer (textures, animations) time _player = translate xpos ypos (facing picture)
             where (xpos, ypos) = _player ^. Pl.position
                   moving  = abs(_player ^. Pl.velocity._1) > 1
@@ -70,7 +72,7 @@ renderPlayer (textures, animations) time _player = translate xpos ypos (facing p
                   facing pic = if (_player ^. Pl.velocity._1) < -1 then scale (-1) 1 pic else pic
 
 
-renderBlock :: Resources -> Blocks.Block -> Picture
+renderBlock :: Resources -> Block -> Picture
 renderBlock (textures, _) (Blocks.SandTop (x,y))    =  translate x y (textures SandTop)
 renderBlock (textures, _) (Blocks.SandCenter (x,y)) =  translate x y (textures Sandcenter)
 renderBlock (textures, _) (Blocks.Box (x,y))        =  translate x y (textures Box)

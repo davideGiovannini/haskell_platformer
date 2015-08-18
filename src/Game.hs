@@ -6,18 +6,24 @@ module Game (
         height,
         deltaTime,
         player,
-        blocks,
+        level,
         viewport,
         totalTime,
         updateDT
         )
 where
 
-import           Control.Lens
+import           Control.Lens                 hiding (Level)
 import           Control.Monad.State.Strict
 import           Data.Fixed                   (div', mod')
 
+import           Data.Vector                  (Vector)
+import qualified Data.Vector                  as Vector (filter)
+
+import           Game.Blocks                  (Block)
 import qualified Game.Blocks                  as Blocks
+import           Game.Levels                  (Level (getTiles), initialLevel)
+import           Game.Player                  (Player)
 import qualified Game.Player                  as Player
 
 import           Graphics.Gloss.Data.ViewPort (ViewPort, viewPortInit)
@@ -40,10 +46,10 @@ gravity = (0, -4800)
 
 
 data GameState = GameState {
-                  _totalTime:: Double,
+                  _totalTime :: Double,
                   _viewport  :: ViewPort,
-                  _player    :: Player.Player,
-                  _blocks    :: [Blocks.Block]
+                  _player    :: Player,
+                  _level     :: Level
 
                  }
 
@@ -51,19 +57,7 @@ makeLenses ''GameState
 
 
 initialState :: GameState
-initialState = GameState 0 viewPortInit (Player.newPlayer (-285,-55) gravity) [
-                                                                                Blocks.Box      (-285,5),
-                                                                                Blocks.Box      (-285,-65),
-                                                                                Blocks.SandCenter (-285,-205),
-                                                                                Blocks.SandTop (-285,-135),
-                                                                                Blocks.SandCenter (-215,-205),
-                                                                                Blocks.SandTop (-215,-135),
-                                                                                Blocks.SandTop (75,-205),
-                                                                                Blocks.SandTop (145,-205),
-                                                                                Blocks.SandTop (215,-205),
-                                                                                Blocks.SandTop (285,-205),
-                                                                                Blocks.Box      (285,-135)]
-
+initialState = GameState 0 viewPortInit (Player.newPlayer (-285,-55) gravity) initialLevel
 
 
 
@@ -80,7 +74,7 @@ update input = do
            player .= execState (Player.update input deltaTimeF) currPlayer
 
            let useInCollision block = case block of Blocks.Box _ -> True; Blocks.SandTop _ -> True; _ -> False
-           tiles <- state $ \x -> (x ^..  blocks.traversed.filtered useInCollision, x)
+           tiles <- gets $ \gamestate -> Vector.filter useInCollision (getTiles $ gamestate ^.  level)
 
            player %= execState (collision tiles (currPlayer ^. Player.position._2))
 
@@ -89,7 +83,7 @@ update input = do
 
 
 
-wrapAroundBounds :: State Player.Player ()
+wrapAroundBounds :: State Player ()
 wrapAroundBounds = do
                Player.position._1 %= \ x -> if x < -w2 then w2 else if x > w2 then -w2 else x
                Player.position._2 %= \ y -> if y < -h2 then h2 else if y > h2 then -h2 else y
@@ -97,7 +91,7 @@ wrapAroundBounds = do
                (w2, h2) = (fromIntegral width /2, fromIntegral height /2)
 
 
-collision :: [Blocks.Block] -> Float -> State Player.Player ()
+collision :: Vector Block -> Float -> State Player ()
 collision tiles oldY = do
         fallingSpeed <-  use $ Player.velocity._2
         anchorPoint  <- Player.anchorPoint <$> get
