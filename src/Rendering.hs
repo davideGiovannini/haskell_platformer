@@ -16,7 +16,7 @@ import qualified Data.Vector                  as Vector
 import           Game
 import           Game.Blocks                  (Block)
 import qualified Game.Blocks                  as Blocks
-import           Game.Levels                  (tiles, bounds)
+import           Game.Levels                  (bounds, tiles)
 import           Game.Player                  (Player)
 import qualified Game.Player                  as Pl
 

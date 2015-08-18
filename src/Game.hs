@@ -22,13 +22,15 @@ import qualified Data.Vector                  as Vector (filter)
 
 import           Game.Blocks                  (Block)
 import qualified Game.Blocks                  as Blocks
-import           Game.Levels                  (Level, initialLevel, tiles, bounds)
+import           Game.Levels                  (Level, bounds, initialLevel,
+                                               tiles)
 import           Game.Player                  (Player)
 import qualified Game.Player                  as Player
 
-import           Graphics.Gloss.Data.Vector   (magV, mulSV)
 
-import           Graphics.Gloss.Data.ViewPort (ViewPort (..), viewPortInit)
+import           Graphics.Gloss.Data.ViewPort (ViewPort, viewPortInit)
+
+import           Game.Viewport                (followPlayer)
 
 
 ------------------------------------------------
@@ -86,7 +88,7 @@ update input = do
 
 
            updatedPlayer <- use player
-           viewport %= followPlayer updatedPlayer
+           viewport %= followPlayer deltaTimeF updatedPlayer
 
 
 wrapAroundBounds :: (Float, Float) -> State Player ()
@@ -121,23 +123,6 @@ topOfSquare (x, y) (sx, sy) w = x > sx-w2 && x < sx+w2 && y > sy+w4 && y < sy+w2
                 where w2 = w/2
                       w4 = w/4
 
-
-
-followPlayer ::  Player -> ViewPort -> ViewPort
-followPlayer _player (ViewPort vV@(x, y) r s) =
-                            let (tx, ty) = mulSV (-1) (_player ^. Player.position)
-                                distanceV@(dx, dy) = (tx-x, ty-y)
-                                magDist = magV distanceV
-                                onground = _player ^. Player.onGround
-                                (xx, yy) =  if magDist > 1 then
-                                                if onground || magDist < 60 then
-                                                    (x+(dx*deltaTimeF), y+(dy*deltaTimeF))
-                                                else
-                                                    (x+(dx*deltaTimeF), y)
-                                            else
-                                            vV
-                            in
-                            ViewPort (xx, yy)  r s
 
 
 
