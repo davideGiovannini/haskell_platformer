@@ -15,6 +15,9 @@ data Block = SandCenter{
            | Box{
                     _pos :: (Float, Float)
                   }
+           | Cactus{
+                    _pos :: (Float, Float)
+                  }
            deriving (Show, Eq)
 
 makeLenses ''Block

@@ -4,10 +4,10 @@ module Game.Levels
        Level,
        bounds,
        tiles,
+       background,
        initialLevel
    )
 where
-
 
 
 
@@ -16,9 +16,12 @@ import           Data.Vector  (Vector)
 import qualified Data.Vector  as Vector
 import           Game.Blocks
 
+import Game.Backgrounds(desertBackground,Background)
+
 data Level = Level {
-                     _bounds :: (Float, Float),
-                     _tiles  :: Vector Block
+                     _background :: Background,
+                     _bounds     :: (Float, Float),
+                     _tiles      :: Vector Block
                    }
 
 makeLenses ''Level
@@ -26,11 +29,12 @@ makeLenses ''Level
 
 
 initialLevel :: Level
-initialLevel = Level (4399, 600) (Vector.fromList $ [
+initialLevel = Level desertBackground (4399, 600) (Vector.fromList $ [
                                         Box      (-355,5),
                                         Box      (-355,-65),
 
                                         Box      (355,-135),
+                                        Cactus   (215, -135),
 
                                         Box      (1055,-135),
                                         Box      (1125,-65),
