@@ -18,13 +18,13 @@ import           Control.Monad.State.Strict
 import           Data.Fixed                   (div', mod')
 
 import           Data.Vector                  (Vector)
-import qualified Data.Vector                  as Vector (filter)
+import qualified Data.Vector                  as Vector (filter, map)
 
 import           Game.Blocks                  (Block, BlockType (..), blockType)
 import           Game.Entities.Player         (Player)
 import qualified Game.Entities.Player         as Player
-import           Game.Levels                  (Level, initialLevel, levelBounds,
-                                               tiles)
+import           Game.Levels                  (Level, enemies, initialLevel,
+                                               levelBounds, tiles)
 
 
 import           Graphics.Gloss.Data.ViewPort (ViewPort, viewPortInit)
@@ -33,7 +33,9 @@ import           Game.Viewport                (followPlayer)
 
 import           Control.Arrow                ((***))
 import           Game.Entities                (BasicEntity, bounds, dy,
-                                               position, velocity, wh, xy, y)
+                                               integrateAcceleration,
+                                               integrateSpeed, position,
+                                               velocity, wh, xy, y)
 
 ------------------------------------------------
 
@@ -87,6 +89,10 @@ update input = do
 
            boundaries <- use $ level.levelBounds
            player %= wrapAroundBounds boundaries
+
+           -- FLY
+           level.enemies %= Vector.map (execState (integrateAcceleration deltaTimeF >> integrateSpeed deltaTimeF))
+           level.enemies %= Vector.map (wrapAroundBounds boundaries)
 
 
            updatedPlayer <- use player

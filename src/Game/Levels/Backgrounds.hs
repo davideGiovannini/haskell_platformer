@@ -1,4 +1,4 @@
-module Game.Backgrounds where
+module Game.Levels.Backgrounds where
 
 import Graphics.Gloss (Color, makeColorI)
 

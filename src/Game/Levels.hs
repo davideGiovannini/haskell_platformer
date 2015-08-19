@@ -4,11 +4,11 @@ module Game.Levels
        Level,
        levelBounds,
        tiles,
+       enemies,
        background,
        initialLevel
    )
 where
-
 
 
 import           Control.Lens     hiding (Level)
@@ -16,17 +16,21 @@ import           Data.Vector      (Vector)
 import qualified Data.Vector      as Vector
 import           Game.Blocks      (Block, BlockType (..), blockAt)
 
-import           Game.Backgrounds (Background, desertBackground)
+import           Game.Levels.Backgrounds (Background, desertBackground)
 
-data Level = Level {
+import qualified Game.Entities.Fly as Fly
+import Game.Entities.Fly(Fly)
+
+
+data Level = Level
+                    {
                      _background  :: Background,
                      _levelBounds :: (Float, Float),
-                     _tiles       :: Vector Block
-                   }
+                     _tiles       :: Vector Block,
+                     _enemies       :: Vector Fly
+                    }
 
 makeLenses ''Level
-
-
 
 initialLevel :: Level
 initialLevel = Level desertBackground (4399, 600) (Vector.fromList $ [
@@ -46,7 +50,14 @@ initialLevel = Level desertBackground (4399, 600) (Vector.fromList $ [
                                          ++ concat
                                          [drawSquare x (-135) | x <- [-565,(-495)..(-355)]]
                                          ++ [SandCenter `blockAt` ( x,-275) | x <- [-565,(-495)..(-285)]]
-                                        )
+                                         )
+
+                                        (Vector.fromList [Fly.newFly (0,0) (-250,0),
+                                                          Fly.newFly (-140,40) (260,0),
+                                                          Fly.newFly (-240,80) (265,0),
+                                                          Fly.newFly (-180,-20) (-240,0),
+                                                          Fly.newFly (140,-60) (270,0)
+                                                         ])
 
 
 
