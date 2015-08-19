@@ -7,19 +7,19 @@ module Rendering (
 where
 
 import           Graphics.Gloss
+import           Graphics.Gloss.Data.Vector   (mulSV)
 import           Graphics.Gloss.Data.ViewPort
-import Graphics.Gloss.Data.Vector(mulSV)
 import           Graphics.Gloss.Rendering     as RS
 import           "GLFW-b" Graphics.UI.GLFW             as GLFW
 
 import           Data.Maybe                   (fromJust)
 import qualified Data.Vector                  as Vector
 import           Game
-import           Game.Blocks                  (Block)
+import           Game.Blocks                  (Block, blockType)
 import qualified Game.Blocks                  as Blocks
-import           Game.Levels                  (bounds, tiles, background)
-import           Game.Player                  (Player)
-import qualified Game.Player                  as Pl
+import           Game.Entities.Player         (Player)
+import qualified Game.Entities.Player         as Pl
+import           Game.Levels                  (background, levelBounds, tiles)
 
 import           Control.Monad.Reader
 
@@ -28,8 +28,11 @@ import           Graphics.Gloss.Juicy
 
 import qualified Data.Map.Strict              as Map
 
-import qualified Game.Backgrounds as B (BackgroundElement(..), Background(..))
-import Data.Monoid ((<>))
+import           Data.Monoid                  ((<>))
+import qualified Game.Backgrounds             as B (Background (..),
+                                                    BackgroundElement (..))
+
+import           Game.Entities                (position, xy, velocity, dx)
 
 type Textures = Texture -> Picture
 type Animations = Animation -> Vector.Vector Picture
@@ -61,7 +64,7 @@ renderFrame resources window glossState = do
     picPlayer <- renderPlayer resources time <$> asks (^. player)
     picBlocks <- foldMap (renderBlock resources) <$> asks (^. level.tiles)
     viewp     <- asks (^. viewport)
-    (w, h) <- asks (^. level.bounds)
+    (w, h) <- asks (^. level.levelBounds)
 
     background_ <- asks (^.level.background)
 
@@ -77,21 +80,24 @@ renderFrame resources window glossState = do
 
 renderPlayer :: Resources -> Double -> Player -> Picture
 renderPlayer (textures, animations) time _player = translate xpos ypos (facing picture)
-            where (xpos, ypos) = _player ^. Pl.position
-                  moving  = abs(_player ^. Pl.velocity._1) > 1
+            where (xpos, ypos) = _player ^. position.xy
+                  moving  = abs(_player ^. velocity.dx) > 1
                   onground = _player ^. Pl.onGround
                   picture
                       | moving && onground = animations AlienBlueWalk Vector.! mod (round (20*time) ) 9
                       | onground           = textures AlienBlue
                       | otherwise          = textures AlienBlueJump
-                  facing pic = if (_player ^. Pl.velocity._1) < -1 then scale (-1) 1 pic else pic
+                  facing pic = if (_player ^. velocity.dx) < -1 then scale (-1) 1 pic else pic
 
 
 renderBlock :: Resources -> Block -> Picture
-renderBlock (textures, _) (Blocks.SandTop (x,y))    =  translate x y (textures SandTop)
-renderBlock (textures, _) (Blocks.SandCenter (x,y)) =  translate x y (textures Sandcenter)
-renderBlock (textures, _) (Blocks.Box (x,y))        =  translate x y (textures Box)
-renderBlock (textures, _) (Blocks.Cactus (x,y))     =  translate x y (textures Cactus)
+renderBlock (textures, _) block = case block ^. blockType of
+                                        Blocks.SandTop    ->  renderWith $ textures SandTop
+                                        Blocks.SandCenter ->  renderWith $ textures Sandcenter
+                                        Blocks.Box        ->  renderWith $ textures Box
+                                        Blocks.Cactus     ->  renderWith $ textures Cactus
+                                  where renderWith = uncurry translate (block ^. position.xy)
+
 
 
 renderBackground :: Resources -> B.Background -> ViewPort -> Picture

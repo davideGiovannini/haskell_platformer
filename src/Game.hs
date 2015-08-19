@@ -20,18 +20,20 @@ import           Data.Fixed                   (div', mod')
 import           Data.Vector                  (Vector)
 import qualified Data.Vector                  as Vector (filter)
 
-import           Game.Blocks                  (Block)
-import qualified Game.Blocks                  as Blocks
-import           Game.Levels                  (Level, bounds, initialLevel,
+import           Game.Blocks                  (Block, BlockType (..), blockType)
+import           Game.Entities.Player         (Player)
+import qualified Game.Entities.Player         as Player
+import           Game.Levels                  (Level, initialLevel, levelBounds,
                                                tiles)
-import           Game.Player                  (Player)
-import qualified Game.Player                  as Player
 
 
 import           Graphics.Gloss.Data.ViewPort (ViewPort, viewPortInit)
 
 import           Game.Viewport                (followPlayer)
 
+import           Control.Arrow                ((***))
+import           Game.Entities                (BasicEntity, bounds, dy,
+                                               position, velocity, wh, xy, y)
 
 ------------------------------------------------
 
@@ -77,31 +79,35 @@ update input = do
            currPlayer <- use player
            player .= execState (Player.update input deltaTimeF) currPlayer
 
-           let useInCollision block = case block of Blocks.Box _ -> True; Blocks.SandTop _ -> True; _ -> False
+           let useInCollision block = case block ^. blockType of Box  -> True; SandTop -> True; _ -> False
            solidtiles <- gets $ \gamestate -> Vector.filter useInCollision (gamestate ^.  level.tiles)
 
-           player %= execState (collision solidtiles (currPlayer ^. Player.position._2))
+           player %= execState (collision solidtiles (currPlayer ^. position.y))
 
 
-           levelBounds <- use $ level.bounds
-           player %= execState (wrapAroundBounds levelBounds)
+           boundaries <- use $ level.levelBounds
+           player %= wrapAroundBounds boundaries
 
 
            updatedPlayer <- use player
            viewport %= followPlayer deltaTimeF updatedPlayer
 
 
-wrapAroundBounds :: (Float, Float) -> State Player ()
-wrapAroundBounds (w, h)= do
-               Player.position._1 %= \ x -> if x < -w2 then w2 else if x > w2 then -w2 else x
-               Player.position._2 %= \ y -> if y < -h2 then h2 else if y > h2 then -h2 else y
+wrapAroundBounds :: BasicEntity entity => (Float, Float) -> entity -> entity
+wrapAroundBounds (w, h) =
+                position.xy %~ (constrain w2 *** constrain h2)
           where
+               constrain bound v
+                          | v < -bound = bound
+                          | v > bound  = -bound
+                          | otherwise  = v
                (w2, h2) = (w/2, h/2)
 
 
+-- TODO refactor this function like the one above
 collision :: Vector Block -> Float -> State Player ()
 collision solidtiles oldY = do
-        fallingSpeed <-  use $ Player.velocity._2
+        fallingSpeed <-  use $ velocity.dy
         anchorPoint  <- Player.anchorPoint <$> get
 
         if fallingSpeed < 0  && any (shouldStopFall anchorPoint) solidtiles then
@@ -109,7 +115,8 @@ collision solidtiles oldY = do
         else
             Player.onGround    .= False
     where
-          shouldStopFall anchor block  = topOfSquare anchor (block ^. Blocks.pos) Blocks.blockSize
+          shouldStopFall :: (Float, Float) -> Block -> Bool
+          shouldStopFall anchor block = topOfSquare anchor (block ^. position.xy) (block ^. bounds.wh)
 
 
 
@@ -118,10 +125,11 @@ collision solidtiles oldY = do
 {-insideSquare (x, y) (sx, sy) w = x > sx-w2 && x < sx+w2 && y > sy-w2 && y < sy+w2-}
                 {-where w2 = w/2-}
 
-topOfSquare :: (Float, Float) -> (Float, Float) -> Float -> Bool
-topOfSquare (x, y) (sx, sy) w = x > sx-w2 && x < sx+w2 && y > sy+w4 && y < sy+w2
+topOfSquare :: (Float, Float) -> (Float, Float) -> (Float, Float) -> Bool
+topOfSquare (u, v) (sx, sy) (w, h) = u > sx-w2 && u < sx+w2 && v > sy+h4 && v < sy+h2
                 where w2 = w/2
-                      w4 = w/4
+                      h2 = h/2
+                      h4 = h/4
 
 
 
