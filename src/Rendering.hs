@@ -116,8 +116,8 @@ renderBackground res backg viewp = Pictures [ renderElement (B._statics backg),
                                        (o3x, o3y) = mulSV 0.2 (viewPortTranslate viewp)
                                        renderElement B.Sun = translate 200 150 (textures Sun)
                                        renderElement B.Clouds1 = translate 0 (-70) (textures Clouds1)
-                                       renderElement B.Hills1 = translate 0 (-100) (textures Hills1)
                                        renderElement B.Hills2 = translate 0 (-120) (textures Hills2)
+                                       renderElement B.Hills1 = translate 0 (-150) (textures Hills1)
                                        renderElement B.Empty = Blank
 
 
