@@ -10,7 +10,8 @@ import           Control.Concurrent         (threadDelay)
 import           Game
 import           GLFWUtils
 
-import           Rendering
+import           Resources
+import Rendering
 
 import           Control.Monad.Reader
 

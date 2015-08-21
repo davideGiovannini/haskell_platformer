@@ -1,47 +1,48 @@
-{-# LANGUAGE TemplateHaskell #-}
 module Game.Blocks
 (
-    BlockType(..),
-    Block,
-    blockAt,
-    blockType
+    sandCenter,
+    cactus,
+    box,
+    sandTop
     )
 where
 
-import           Control.Lens
-import           Game.Entities (BasicEntity, CollisionEntity,
-                                ComponentBounds (..), ComponentPosition (..),
-                                bounds, position)
+import           Control.Lens               ((%=))
+import           Entities
+import           Resources
+
+import           Control.Monad.State.Strict
+
+import           Data.Vector                (cons)
+
+import           Components.Bounds
+import           Components.Position
+import           Components.Renderable
 
 tileSize :: Float
 tileSize = 70
 
---------------- DATA DEFINITION ----------------
-
-data BlockType = SandCenter
-               | SandTop
-               | Box
-               |Cactus
-               deriving (Show, Eq, Ord)
-
-
-data Block = Block {
-                    _blockType     :: BlockType,
-                    _blockPosition :: ComponentPosition,
-                    _blockSize     :: ComponentBounds
-                   }
-                   deriving (Show, Eq)
-
-makeLenses ''Block
-
-instance BasicEntity Block where
-    position = blockPosition
-
-instance CollisionEntity Block where
-    bounds = blockSize
 
 -------------------- FUNCTIONS ------------
 
 
-blockAt :: BlockType -> (Float, Float) -> Block
-blockAt bType (x1, y1) = Block bType (Position x1 y1) (Bounds tileSize tileSize)
+newBlock :: Texture -> Int -> (Float, Float)-> State World ()
+newBlock bType intId (x1, y1) = do
+    let entity = Entity intId
+    entities %= cons entity
+
+    updatePosOf entity (Position x1 y1)
+    updateRenderOf entity (RenderTexture bType)
+    updateBoundsOf entity (Bounds tileSize tileSize)
+
+
+
+
+sandCenter,sandTop, box, cactus :: Int -> (Float, Float)-> State World ()
+sandCenter = newBlock Sandcenter
+sandTop    = newBlock SandTop
+box        = newBlock Box
+cactus     = newBlock Cactus
+
+
+
