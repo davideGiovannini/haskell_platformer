@@ -11,18 +11,18 @@ module Game (
         )
 where
 
-import           Control.Lens                 hiding (Level)
+import           Control.Lens               hiding (Level)
 import           Control.Monad.State.Strict
-import           Data.Fixed                   (div', mod')
+import           Data.Fixed                 (div', mod')
 
 
-import           Game.Blocks
+import           Entities.Fly
 import           Entities.Player
-import Entities.Fly
 
 
 import           Entities
 
+import           Game.Levels                (initialLevel)
 
 
 
@@ -54,10 +54,9 @@ makeLenses ''GameState
 
 initialState :: GameState
 initialState = GameState 0 (execState (do
-                                      cactus 1 (0,0)
-                                      cactus 2 (50,0)
-                                      newPlayer 3 (100,100) gravity
-                                      newFly 4 (10,0) (20,0)
+                                      newPlayer  (100,100) gravity
+                                      newFly  (10,0) (20,0)
+                                      initialLevel
 
     )emptyWorld)
 {-initialState = tate 0 viewPortInit (Player.newPlayer (-285,-55) gravity) initialLevel-}

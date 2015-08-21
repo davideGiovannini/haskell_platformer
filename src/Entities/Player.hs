@@ -4,19 +4,18 @@ module Entities.Player (
 where
 
 import           Components.Acceleration
-import           Components.Position
-import           Components.Velocity
 import           Components.Bounds
+import           Components.JumpAbility
+import           Components.Position
 import           Components.Renderable
+import           Components.Velocity
 
-import           Control.Lens               ((%=))
 import           Entities
 
 import           Resources
 
 import           Control.Monad.State.Strict
 
-import           Data.Vector                (cons)
 
 
 -- TODO costante provvisoria
@@ -52,16 +51,17 @@ framesRecharcheJump :: Int
 framesRecharcheJump = 5
 
 
-newPlayer :: Int -> (Float, Float) -> (Float, Float) -> State World ()
-newPlayer intId pos acc = do --Player (Position posx posy) (Velocity 0 0) (uncurry Acceleration acc ) (uncurry Bounds playerSize) False 0
-    let entity = Entity intId
-    entities %= cons entity
+newPlayer :: (Float, Float) -> (Float, Float) -> State World ()
+newPlayer pos acc = do
+    entity <- newEntity
 
     updatePosOf entity (uncurry Position pos)
     updateVelOf entity (Velocity 0 0)
     updateAccOf entity (uncurry Acceleration acc)
 
     updateBoundsOf entity (uncurry Bounds playerSize)
+
+    updateJumpAbOf entity (JumpAbility False jumpSpeed framesRecharcheJump)
 
     updateRenderOf entity (RenderAnim 9 AlienBlueWalk)
 

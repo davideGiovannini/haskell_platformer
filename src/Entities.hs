@@ -1,23 +1,64 @@
 {-# LANGUAGE TemplateHaskell #-}
 module Entities
+    (
+        Entity,
+        World,
+
+        entities,  -- TODO remove unnecessary power to users of this API
+        positions,
+        velocities,
+        accelerations,
+        boundaries,
+        jumpInfos,
+        playerInputs,
+        renderables,
+
+        emptyWorld,
+        newEntity,
+        removeEntity,
+
+        positionOf,
+        updatePosOf,
+
+        velocityOf,
+        updateVelOf,
+
+        accelOf,
+        updateAccOf,
+
+        boundsOf,
+        updateBoundsOf,
+
+        renderOf,
+        updateRenderOf,
+
+        jumpAbilityOf,
+        updateJumpAbOf,
+
+        updateVelocities
+    )
 where
 
 import           Control.Lens
 
-import qualified Data.Map.Strict as Map
-import qualified Data.Vector as Vector(Vector, empty)
+import qualified Data.Map.Strict            as Map
+import qualified Data.Set                   as Set (Set, delete, empty, insert,
+                                                    member)
 
-import Control.Monad.State.Strict
+import           Control.Monad.State.Strict
 
 
-import Components.Position
-import Components.Velocity
-import Components.Acceleration
-import Components.Bounds
-import Components.Renderable
+import           Components.Acceleration
+import           Components.Bounds
+import           Components.JumpAbility
+import           Components.Position
+import           Components.Renderable
+import           Components.Velocity
+import           Components.PlayerInput
 
---- BASIC ENTITY with Position  --------------------
 
+
+--------- Entity Definition
 newtype Entity = Entity {
                          getId :: Int
                         }
@@ -29,46 +70,42 @@ instance Ord Entity where
     a > b  = getId a > getId b
     a <= b = getId a <= getId b
 
-
-
-
-
-
-
-
-data ComponentJump = Jump {
-                            _onGround  :: Bool,
-                            _jumpTimer :: Int
-                          }
-
-
-data ComponentInput = Input
-
-
-
-
-makeLenses ''ComponentJump
-
-
+--------- World DEFINITION
 
 type Map = Map.Map Entity
 
 data World = World {
-                   _entities      :: Vector.Vector Entity,
+                   _maxID         :: Int,
+                   _entities      :: Set.Set Entity,
                    _positions     :: Map Position,
                    _velocities    :: Map Velocity,
                    _accelerations :: Map Acceleration,
                    _boundaries    :: Map Bounds,
-                   _jumpInfos     :: Map ComponentJump,
-                   _inputs        :: Map ComponentInput,
+                   _jumpInfos     :: Map JumpAbility,
+                   _playerInputs  :: Map PlayerInput,
                    _renderables   :: Map Renderable
                  }
 
 makeLenses ''World
 
 emptyWorld :: World
-emptyWorld = World Vector.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty
+emptyWorld = World 0 Set.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty
 
+
+newEntity :: State World Entity
+newEntity =  do
+    intId <- use maxID
+    maxID += 1
+    let entity = Entity intId
+    entities %= Set.insert entity
+
+    return entity
+
+removeEntity :: Entity -> State World ()
+removeEntity entity = do
+      entitiesSet <- use entities
+      when (entity `Set.member` entitiesSet) (entities %= Set.delete entity)
+      --TODO maybe do something if trying to remove non existent entities
 
 ----- POSITION
 
@@ -109,6 +146,16 @@ renderOf e = uses renderables $ Map.lookup e
 
 updateRenderOf :: Entity -> Renderable -> State World ()
 updateRenderOf e val = renderables %= Map.insert e val
+
+
+----- JumpAbility
+
+jumpAbilityOf :: Entity -> State World (Maybe JumpAbility)
+jumpAbilityOf e = uses jumpInfos $ Map.lookup e
+
+updateJumpAbOf :: Entity -> JumpAbility -> State World ()
+updateJumpAbOf e val = jumpInfos %= Map.insert e val
+
 
 
 

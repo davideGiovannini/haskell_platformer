@@ -32,9 +32,9 @@ renderFrame resources window glossState = do
     time      <- asks (^. totalTime)
     lsPos   <- asks (^. world.positions)
     lsRender <- asks (^. world.renderables)
-    lsEntities <- asks (^. world.entities)
+    setEntities <- asks (^. world.entities)
     let pics :: Maybe Picture
-        pics  = foldMap (\k-> renderElem resources time<$>( (,)<$> Map.lookup k lsPos <*> Map.lookup k lsRender)) lsEntities
+        pics  = foldMap (\k-> renderElem resources time<$>( (,)<$> Map.lookup k lsPos <*> Map.lookup k lsRender)) setEntities
 
 
 

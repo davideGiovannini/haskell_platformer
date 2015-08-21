@@ -7,13 +7,11 @@ module Game.Blocks
     )
 where
 
-import           Control.Lens               ((%=))
 import           Entities
 import           Resources
 
 import           Control.Monad.State.Strict
 
-import           Data.Vector                (cons)
 
 import           Components.Bounds
 import           Components.Position
@@ -26,10 +24,9 @@ tileSize = 70
 -------------------- FUNCTIONS ------------
 
 
-newBlock :: Texture -> Int -> (Float, Float)-> State World ()
-newBlock bType intId (x1, y1) = do
-    let entity = Entity intId
-    entities %= cons entity
+newBlock :: Texture -> (Float, Float)-> State World ()
+newBlock bType (x1, y1) = do
+    entity <- newEntity
 
     updatePosOf entity (Position x1 y1)
     updateRenderOf entity (RenderTexture bType)
@@ -37,8 +34,7 @@ newBlock bType intId (x1, y1) = do
 
 
 
-
-sandCenter,sandTop, box, cactus :: Int -> (Float, Float)-> State World ()
+sandCenter,sandTop, box, cactus :: (Float, Float)-> State World ()
 sandCenter = newBlock Sandcenter
 sandTop    = newBlock SandTop
 box        = newBlock Box
