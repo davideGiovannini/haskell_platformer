@@ -14,3 +14,6 @@ wh :: Lens' Bounds (Float, Float)
 wh = lens (_width &&& _height ) (\size (nw, nh) -> size {_width = nw, _height = nh})
 
 makeLenses ''Bounds
+
+emptyBounds :: Bounds
+emptyBounds = Bounds 0 0

@@ -72,7 +72,12 @@ update :: (Bool, Bool, Bool, Bool) -> State GameState ()
 update input = do
            totalTime += deltaTime
 
-           world %= execState (updateVelocities deltaTimeF)
+           world %= execState (do
+                                 processAccelerations deltaTimeF
+                                 processSpeedLimits
+                                 processVelocities deltaTimeF
+                                 processWorldBoundaries
+                              )
 
            return ()
            {-currPlayer <- use player-}
@@ -96,15 +101,6 @@ update input = do
            {-viewport %= followPlayer deltaTimeF updatedPlayer-}
 
 
-{-wrapAroundBounds :: BasicEntity entity => (Float, Float) -> entity -> entity-}
-{-wrapAroundBounds (w, h) =-}
-                {-position.xy %~ (constrain w2 *** constrain h2)-}
-          {-where-}
-               {-constrain bound v-}
-                          {-| v < -bound = bound-}
-                          {-| v > bound  = -bound-}
-                          {-| otherwise  = v-}
-               {-(w2, h2) = (w/2, h/2)-}
 
 
 -- TODO refactor this function like the one above

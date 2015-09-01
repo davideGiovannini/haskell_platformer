@@ -7,24 +7,25 @@ where
 
 
 import Control.Monad.State.Strict
-import Entities(World)
+import Entities(World, dimensions)
 import Game.Blocks
 import Entities.Fly(newFly)
 
 import Game.Levels.Backgrounds
+
+import Components.Bounds
+import Control.Lens((.=))
 
 {-data Level = Level -}
                      {-_background  :: Background,-}
                      {-_levelBounds :: (Float, Float)-}
 
 
-{-makeLenses ''Level-}
-
-{-initialLevel :: Level-}
-{-initialLevel = Level desertBackground (4399, 600) (Vector.fromList $ [-}
 
 initialLevel :: State World ()
 initialLevel = do
+                dimensions.wh .= (4399, 600)
+
                 desertBackground
 
                 box (-355,5)

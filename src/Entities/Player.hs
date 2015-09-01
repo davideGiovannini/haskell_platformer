@@ -6,6 +6,7 @@ where
 import           Components.Acceleration
 import           Components.Bounds
 import           Components.JumpAbility
+import           Components.MaxSpeed
 import           Components.Position
 import           Components.Renderable
 import           Components.Velocity
@@ -62,6 +63,8 @@ newPlayer pos acc = do
     updateBoundsOf entity (uncurry Bounds playerSize)
 
     updateJumpAbOf entity (JumpAbility False jumpSpeed framesRecharcheJump)
+
+    updateMaxSpeedOf entity (MaxSpeed maxWalkSpeed maxFallSpeed)
 
     updateRenderOf entity (RenderAnim 9 AlienBlueWalk)
 
