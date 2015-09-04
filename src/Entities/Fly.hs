@@ -12,15 +12,17 @@ import           Resources                  (Animation (Fly))
 
 import           Control.Monad.State.Strict
 
+import Control.Lens((&),(.~))
 
 
 newFly :: (Float, Float) -> (Float, Float)-> State World ()
 newFly pos vel = do
     entity <- newEntity
 
-    updatePosOf entity (uncurry Position pos)
-    updateVelOf entity (uncurry Velocity vel)
-    updateRenderOf entity (RenderAnim 2 Fly)
+    updateEntity ( entity & position .~ Just(uncurry Position pos)
+                          & velocity .~ Just(uncurry Velocity vel)
+                          & renderable .~ Just(RenderAnim 2 Fly)
+                 )
 
 
 

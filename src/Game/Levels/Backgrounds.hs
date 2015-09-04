@@ -2,12 +2,14 @@ module Game.Levels.Backgrounds where
 
 {-import Graphics.Gloss (Color, makeColorI)-}
 
-import Resources
-import Components.Renderable
-import Components.Position
-import Entities
+import           Components.Position
+import           Components.Renderable
+import           Entities
+import           Resources
 
-import Control.Monad.State.Strict
+import           Control.Monad.State.Strict
+
+import           Control.Lens               ((&), (.~))
 
 --data BackgroundElement = Sun
 --                       | Clouds1
@@ -32,5 +34,7 @@ import Control.Monad.State.Strict
 desertBackground :: State World ()
 desertBackground = do
     entity <- newEntity
-    updateRenderOf entity (RenderTexture Sun)
-    updatePosOf entity  (Position 200 150)
+
+    updateEntity (entity & renderable .~ Just(RenderTexture Sun)
+                         & position   .~ Just(Position 200 150)
+                 )

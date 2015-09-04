@@ -21,7 +21,7 @@ import           Entities.Player
 
 
 import           Entities
-import           Systems
+import           Systems hiding (update)
 
 import           Game.Levels                (initialLevel)
 
@@ -75,12 +75,12 @@ update input = do
            totalTime += deltaTime
 
            world %= execState (do
-                                 processInput input
-                                 processAccelerations deltaTimeF
-                                 processSpeedLimits
-                                 processVelocities deltaTimeF
-                                 processCollision
-                                 processWorldBoundaries
+                                 forAllEntities $ processInput input
+                                 forAllEntities $ processAccelerations deltaTimeF
+                                 forAllEntities processSpeedLimits
+                                 forAllEntities $ processVelocities deltaTimeF
+                                 forAllEntities processCollision
+                                 forAllEntities processWorldBoundaries
                               )
 
 

@@ -14,14 +14,13 @@ import           Game                     (GameState (), height, totalTime,
 
 import           Control.Monad.Reader
 
-import           Control.Lens
-
-import qualified Data.Map.Strict          as Map
+import           Control.Lens hiding (has, from)
 
 
 import           Components.Position
-import Components.Renderable
+import           Components.Renderable
 import           Entities
+import           Systems
 
 
 import           Resources
@@ -30,11 +29,9 @@ import           Resources
 renderFrame :: Resources ->  Window -> RS.State -> ReaderT GameState IO ()
 renderFrame resources window glossState = do
     time      <- asks (^. totalTime)
-    lsPos   <- asks (^. world.positions)
-    lsRender <- asks (^. world.renderables)
     setEntities <- asks (^. world.entities)
-    let pics :: Maybe Picture
-        pics  = foldMap (\k-> renderElem resources time<$>( (,)<$> Map.lookup k lsPos <*> Map.lookup k lsRender)) setEntities
+    let pics :: Picture
+        pics  = foldMap (renderEntity $ renderElem resources time) setEntities
 
 
 
@@ -45,7 +42,7 @@ renderFrame resources window glossState = do
 
     {-background_ <- asks (^.level.background)-}
 
-    lift.sequence_ $ displayPicture (width, height) black glossState 0 <$> pics
+    lift $ displayPicture (width, height) black glossState 0 pics
 
     {-lift $ displayPicture (width, height) (B._fillColor background_) glossState (viewPortScale viewp) $-}
                 {-renderBackground resources background_ viewp -- Draw background-}
@@ -60,9 +57,16 @@ renderFrame resources window glossState = do
 
 
 
-renderElem :: Resources -> Double -> (Position, Renderable) -> Picture
-renderElem (textures, _) _ (pos, RenderTexture texture) = uncurry translate (pos ^.xy) (textures texture)
-renderElem (_, animations) time (pos, RenderAnim frames anim) = uncurry translate (pos ^. xy) (animations anim Vector.! mod (round (20*time))frames)
+renderEntity :: (Position -> Renderable -> Picture) -> Entity -> Picture
+renderEntity renderFunc entity =
+          if entity `has` renderable && entity `has` position then
+                renderFunc (position `from` entity) (renderable `from` entity)
+          else
+            Blank
+
+renderElem :: Resources -> Double -> Position -> Renderable -> Picture
+renderElem (textures, _) _ pos (RenderTexture texture) = uncurry translate (pos ^.xy) (textures texture)
+renderElem (_, animations) time pos (RenderAnim frames anim) = uncurry translate (pos ^. xy) (animations anim Vector.! mod (round (20*time))frames)
 
 {-renderBackground :: Resources -> B.Background -> ViewPort -> Picture-}
 {-renderBackground res backg viewp = Pictures [ renderElement (B._statics backg),-}

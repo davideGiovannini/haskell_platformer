@@ -1,5 +1,8 @@
+{-# LANGUAGE RankNTypes #-}
 module Systems
         (
+            has, from, update,
+        forAllEntities,
         processSpeedLimits,
         processVelocities,
         processAccelerations,
@@ -15,8 +18,8 @@ import           Control.Arrow              ((***))
 import           Control.Monad.State.Strict
 import           Entities
 
-import           Control.Lens
-import qualified Data.Map.Strict            as Map
+import           Control.Lens               hiding (from, has)
+import           Data.Maybe                 (fromJust, isJust)
 
 import           Components.Acceleration
 import           Components.Bounds
@@ -27,52 +30,69 @@ import           Components.Velocity
 import           Components.Collisions
 import           Components.Input
 
----------- SYSTEMS ------------------
+---------- Utility functions ------------------
+has :: forall a . Entity -> Getting (Maybe a) Entity (Maybe a) -> Bool
+has entity attr  = isJust (entity ^. attr)
+
+from :: forall a . Getting (Maybe a) Entity (Maybe a) -> Entity -> a
+from attr entity = fromJust (entity ^. attr)
+
+update :: forall components. Entity -> ASetter Entity Entity (Maybe components) (Maybe components) -> components -> State World()
+update entity attr value = updateEntity (entity & attr .~ Just value)
 
 
-processVelocities :: Float -> State World ()
-processVelocities dt = do
-           entity_velocities <- use velocities
-           mapM_ (\(k, Velocity dx' dy')-> (do
-                          maybePos <- positionOf k
-                          let newPos = (\(Position x' y') -> Position (x'+dx'*dt) (y'+dy'*dt))<$>maybePos
-                          sequenceA $ updatePosOf k <$>newPos
-                                           )
-                  )(Map.toList entity_velocities)
+
+------ Systems
 
 
-processAccelerations :: Float -> State World ()
-processAccelerations dt = do
-           entity_accelerations <- use accelerations
-           mapM_ (\(k, Acceleration ax' ay')-> (do
-                          maybeVel <- velocityOf k
-                          let newVel = (\(Velocity dx' dy') -> Velocity (dx'+ax'*dt) (dy'+ay'*dt))<$>maybeVel
-                          sequenceA $ updateVelOf k <$>newVel
-                                           )
-                  )(Map.toList entity_accelerations)
+forAllEntities :: (Entity -> State World ()) -> State World ()
+forAllEntities action = do
+                  entitiesSet <- use entities
+                  mapM_ action entitiesSet
 
-processSpeedLimits :: State World ()
-processSpeedLimits = do
-           entity_maxSpeeds <- use maxSpeeds
-           mapM_ (\(k, MaxSpeed mdx' mdy')-> (do
-                          maybeVel <- velocityOf k
-                          let newVel = (\(Velocity dx' dy') -> Velocity (bound dx' mdx') (bound dy' mdy'))<$>maybeVel
-                          sequenceA $ updateVelOf k <$>newVel
-                                           )
-                  )(Map.toList entity_maxSpeeds)
+processVelocities :: Float -> Entity -> State World ()
+processVelocities dt entity =
+            when (entity `has` position && entity `has` velocity)
+                 (do
+                    let (Velocity dx' dy') = velocity `from` entity
+                        newPos = (\(Position x' y') -> Position (x'+dx'*dt) (y'+dy'*dt)) $ position `from` entity
+
+                    update entity position newPos
+                 )
+
+
+processAccelerations :: Float -> Entity -> State World ()
+processAccelerations dt entity =
+            when (entity `has` acceleration && entity `has` velocity)
+                 (do
+                    let (Acceleration ax' ay') = acceleration `from` entity
+                        newVel = (\(Velocity dx' dy') -> Velocity (dx'+ax'*dt) (dy'+ay'*dt)) $ velocity `from` entity
+
+                    update entity velocity newVel
+                 )
+
+processSpeedLimits :: Entity -> State World ()
+processSpeedLimits entity =
+            when (entity `has` maxSpeed && entity `has` velocity)
+                 (do
+                    let (MaxSpeed mdx' mdy') = maxSpeed `from` entity
+                        newVel = (\(Velocity dx' dy') -> Velocity (bound dx' mdx') (bound dy' mdy')) $ velocity `from` entity
+
+                    update entity velocity newVel
+                 )
             where bound v maxV
                         | v > maxV   =  maxV
                         | v < -maxV  = -maxV
                         | otherwise =  v
 
-processWorldBoundaries :: State World ()
-processWorldBoundaries = do
+processWorldBoundaries :: Entity -> State World ()
+processWorldBoundaries entity = do
                     (w2, h2) <- ((/2)***(/2)) <$> use (dimensions.wh)
-                    entity_positions <-  use positions
-                    mapM_ (\(k, Position x' y')->
-                                         updatePosOf k (uncurry Position $ (constrain w2 *** constrain h2) (x',y')   )
-                          ) (Map.toList entity_positions)
-
+                    when (entity `has` position)
+                         (do
+                            let newPos = (\(Position x' y') -> uncurry Position $ (constrain w2 *** constrain h2) (x', y')) $ position `from` entity
+                            update entity position newPos
+                         )
                     where
                          constrain bound v
                                     | v < -bound = bound
@@ -80,40 +100,42 @@ processWorldBoundaries = do
                                     | otherwise  = v
 
 
-processInput :: Input -> State World ()
-processInput input = do
-                 inputProcs <- use inputProcessors
-                 mapM_ (\(k, f)-> f k input) (Map.toList inputProcs)
+processInput :: Input -> Entity -> State World ()
+processInput input entity =
+            when (entity `has` inputProcessor)
+                 (
+                  (inputProcessor `from` entity) entity input
+                 )
 
 
 
-processCollision :: State World ()
-processCollision = do
-            collidersToCheck <- Map.toList <$> use colliders
-            collidablesToCheck <- Map.toList <$> use collidables
+processCollision :: Entity -> State World ()
+processCollision e = return ()
+            {-collidersToCheck <- Map.toList <$> use colliders-}
+            {-collidablesToCheck <- Map.toList <$> use collidables-}
 
-            mapM_ collisionCheck [(collider, collidable) | collider <- collidersToCheck, collidable <- collidablesToCheck]
+            {-mapM_ collisionCheck [(collider, collidable) | collider <- collidersToCheck, collidable <- collidablesToCheck]-}
 
 
-            where collisionCheck ((k, _), (_, v1))
-                   | v1 == Platform
-                   = do
-                       mfallSpeed <- liftM (^. dx)<$> velocityOf k -- ritorna Maybe Float
-                       pos <- positionOf k
-                       bo <- boundsOf k
-                       let anchor = anchorEdge pos bo
+            {-where collisionCheck ((k, _), (_, v1))-}
+                   {-| v1 == Platform-}
+                   {-= do-}
+                       {-mfallSpeed <- liftM (^. dx)<$> velocityOf k -- ritorna Maybe Float-}
+                       {-pos <- positionOf k-}
+                       {-bo <- boundsOf k-}
+                       {-let anchor = anchorEdge pos bo-}
 
-                       undefined
-                       {-if mfallSpeed < -1 then-}
-                            {-undefined-}
-                       {-else-}
-                            {-undefined-}
+                       {-undefined-}
+                       {-[>if mfallSpeed < -1 then<]-}
+                            {-[>undefined<]-}
+                       {-[>else<]-}
+                            {-[>undefined<]-}
 
-                   | v1 == Tile
-                   = undefined
+                   {-| v1 == Tile-}
+                   {-= undefined-}
 
-                   | otherwise
-                   = undefined
+                   {-| otherwise-}
+                   {-= undefined-}
 
-                  anchorEdge pos bo = (\(Position x1 y1) (Bounds w h) -> ((x1-w/2, y1-h/2),(x1+w/2, y1-h/2))) <$> pos <*> bo
+                  {-anchorEdge pos bo = (\(Position x1 y1) (Bounds w h) -> ((x1-w/2, y1-h/2),(x1+w/2, y1-h/2))) <$> pos <*> bo-}
 

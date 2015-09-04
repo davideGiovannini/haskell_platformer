@@ -10,6 +10,7 @@ where
 import           Entities
 import           Resources
 
+import           Control.Lens               ((&), (.~))
 import           Control.Monad.State.Strict
 
 
@@ -28,9 +29,10 @@ newBlock :: Texture -> (Float, Float)-> State World ()
 newBlock bType (x1, y1) = do
     entity <- newEntity
 
-    updatePosOf entity (Position x1 y1)
-    updateRenderOf entity (RenderTexture bType)
-    updateBoundsOf entity (Bounds tileSize tileSize)
+    updateEntity ( entity & position   .~ Just(Position x1 y1)
+                          & renderable .~ Just(RenderTexture bType)
+                          & bounds     .~ Just(Bounds tileSize tileSize)
+                 )
 
 
 

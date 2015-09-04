@@ -13,13 +13,13 @@ import           Components.Renderable
 import           Components.Velocity
 
 import           Entities
+import Systems
 
 import           Resources
 
 import           Control.Monad.State.Strict
-import           Data.Maybe                 (fromJust, isJust)
 
-import           Control.Lens               ((&), (+~), (-~))
+import           Control.Lens               ((&), (+~), (-~), (.~))
 
 
 
@@ -60,32 +60,32 @@ newPlayer :: (Float, Float) -> (Float, Float) -> State World ()
 newPlayer pos acc = do
     entity <- newEntity
 
-    updatePosOf entity (uncurry Position pos)
-    updateVelOf entity (Velocity 0 0)
-    updateAccOf entity (uncurry Acceleration acc)
+    updateEntity ( entity & position .~ Just(uncurry Position pos)
+                          & velocity .~ Just(Velocity 0 0)
+                          & acceleration .~ Just(uncurry Acceleration acc)
 
-    updateBoundsOf entity (uncurry Bounds playerSize)
+                          & bounds .~ Just(uncurry Bounds playerSize)
 
-    updateJumpAbOf entity (JumpAbility False jumpSpeed framesRecharcheJump)
+                          & jumpAbility .~ Just(JumpAbility False jumpSpeed framesRecharcheJump)
 
-    updateMaxSpeedOf entity (MaxSpeed maxWalkSpeed maxFallSpeed)
+                          & maxSpeed .~ Just(MaxSpeed maxWalkSpeed maxFallSpeed)
 
-    updateRenderOf entity (RenderAnim 9 AlienBlueWalk)
+                          & renderable .~ Just(RenderAnim 9 AlienBlueWalk)
 
-    updateInputProcessorOf entity playerInputProcessor
+                          & inputProcessor .~ Just playerInputProcessor
+                 )
 
 
 
 playerInputProcessor :: InputProcessor
-playerInputProcessor entity input = do
-                   vel <- velocityOf entity
-                   when (isJust vel) (do
-                       let vel' = fromJust vel
+playerInputProcessor entity input =
+                   when (entity `has` velocity ) (do
+                       let vel = velocity `from` entity
                        if r && not l then
-                           updateVelOf entity (vel' & dx +~ speed)
+                           update entity velocity (vel & dx +~ speed)
                        else
                         when (l && not r)
-                                    (updateVelOf entity (vel' & dx -~ speed))
+                                    (update entity velocity (vel & dx -~ speed))
                        )
 
                        where l = _left input
