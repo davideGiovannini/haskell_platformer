@@ -3,6 +3,7 @@ module Entities
     (
         Entity,
         World,
+        InputProcessor,
 
         entities,  -- TODO remove unnecessary power to users of this API
         positions,
@@ -10,8 +11,11 @@ module Entities
         accelerations,
         boundaries,
         jumpInfos,
-        playerInputs,
+        inputProcessors,
         renderables,
+        maxSpeeds,
+        collidables,
+        colliders,
 
         dimensions,
 
@@ -40,11 +44,8 @@ module Entities
         maxSpeedOf,
         updateMaxSpeedOf,
 
-        processSpeedLimits,
-        processVelocities,
-        processAccelerations,
-
-        processWorldBoundaries
+        inputProcessorOf,
+        updateInputProcessorOf,
 
     )
 where
@@ -55,25 +56,25 @@ import qualified Data.Map.Strict            as Map
 import qualified Data.Set                   as Set (Set, delete, empty, insert,
                                                     member)
 
-import           Control.Arrow              ((***))
 import           Control.Monad.State.Strict
-
 
 import           Components.Acceleration
 import           Components.Bounds
+import           Components.Input
 import           Components.JumpAbility
 import           Components.MaxSpeed
-import           Components.PlayerInput
 import           Components.Position
 import           Components.Renderable
 import           Components.Velocity
 
+import           Components.Collisions
 
+type InputProcessor = Entity -> Input -> State World ()
 
 --------- Entity Definition
 newtype Entity = Entity {
                          getId :: Int
-                        }
+                        } deriving (Show)
 
 instance Eq Entity where
     a == b = getId a == getId b
@@ -87,23 +88,26 @@ instance Ord Entity where
 type Map = Map.Map Entity
 
 data World = World {
-                   _maxID         :: Int,
-                   _dimensions    :: Bounds,
-                   _entities      :: Set.Set Entity,
-                   _positions     :: Map Position,
-                   _velocities    :: Map Velocity,
-                   _accelerations :: Map Acceleration,
-                   _boundaries    :: Map Bounds,
-                   _jumpInfos     :: Map JumpAbility,
-                   _playerInputs  :: Map PlayerInput,
-                   _renderables   :: Map Renderable,
-                   _maxSpeeds     :: Map MaxSpeed
+                   _maxID           :: Int,
+                   _dimensions      :: Bounds,
+                   _entities        :: Set.Set Entity,
+
+                   _positions       :: Map Position,
+                   _velocities      :: Map Velocity,
+                   _accelerations   :: Map Acceleration,
+                   _boundaries      :: Map Bounds,
+                   _jumpInfos       :: Map JumpAbility,
+                   _inputProcessors :: Map InputProcessor,
+                   _renderables     :: Map Renderable,
+                   _maxSpeeds       :: Map MaxSpeed,
+                   _colliders       :: Map Collider,
+                   _collidables     :: Map Collidable
                  }
 
 makeLenses ''World
 
 emptyWorld :: World
-emptyWorld = World 0 emptyBounds Set.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty
+emptyWorld = World 0 emptyBounds Set.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty Map.empty
 
 
 newEntity :: State World Entity
@@ -180,57 +184,19 @@ updateMaxSpeedOf :: Entity -> MaxSpeed -> State World ()
 updateMaxSpeedOf e val = maxSpeeds %= Map.insert e val
 
 
----------- SYSTEMS ------------------
+----- InputProcessor
+
+inputProcessorOf :: Entity -> State World (Maybe InputProcessor)
+inputProcessorOf e = uses inputProcessors $ Map.lookup e
+
+updateInputProcessorOf :: Entity -> InputProcessor -> State World ()
+updateInputProcessorOf e val = inputProcessors %= Map.insert e val
 
 
-processVelocities :: Float -> State World ()
-processVelocities dt = do
-           entity_velocities <- use velocities
-           mapM_ (\(k, Velocity dx' dy')-> (do
-                          maybePos <- positionOf k
-                          let newPos = (\(Position x' y') -> Position (x'+dx'*dt) (y'+dy'*dt))<$>maybePos
-                          sequenceA $ updatePosOf k <$>newPos
-                                           )
-                  )(Map.toList entity_velocities)
 
 
-processAccelerations :: Float -> State World ()
-processAccelerations dt = do
-           entity_accelerations <- use accelerations
-           mapM_ (\(k, Acceleration ax' ay')-> (do
-                          maybeVel <- velocityOf k
-                          let newVel = (\(Velocity dx' dy') -> Velocity (dx'+ax'*dt) (dy'+ay'*dt))<$>maybeVel
-                          sequenceA $ updateVelOf k <$>newVel
-                                           )
-                  )(Map.toList entity_accelerations)
 
-processSpeedLimits :: State World ()
-processSpeedLimits = do
-           entity_maxSpeeds <- use maxSpeeds
-           mapM_ (\(k, MaxSpeed mdx' mdy')-> (do
-                          maybeVel <- velocityOf k
-                          let newVel = (\(Velocity dx' dy') -> Velocity (bound dx' mdx') (bound dy' mdy'))<$>maybeVel
-                          sequenceA $ updateVelOf k <$>newVel
-                                           )
-                  )(Map.toList entity_maxSpeeds)
-            where bound v maxV
-                        | v > maxV   =  maxV
-                        | v < -maxV  = -maxV
-                        | otherwise =  v
 
-processWorldBoundaries :: State World ()
-processWorldBoundaries = do
-                    (w2, h2) <- ((/2)***(/2)) <$> use (dimensions.wh)
-                    entity_positions <-  use positions
-                    mapM_ (\(k, Position x' y')->
-                                         updatePosOf k (uncurry Position $ (constrain w2 *** constrain h2) (x',y')   )
-                          ) (Map.toList entity_positions)
-
-                    where
-                         constrain bound v
-                                    | v < -bound = bound
-                                    | v > bound  = -bound
-                                    | otherwise  = v
 
 
 

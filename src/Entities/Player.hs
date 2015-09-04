@@ -5,6 +5,7 @@ where
 
 import           Components.Acceleration
 import           Components.Bounds
+import           Components.Input
 import           Components.JumpAbility
 import           Components.MaxSpeed
 import           Components.Position
@@ -16,6 +17,9 @@ import           Entities
 import           Resources
 
 import           Control.Monad.State.Strict
+import           Data.Maybe                 (fromJust, isJust)
+
+import           Control.Lens               ((&), (+~), (-~))
 
 
 
@@ -67,6 +71,27 @@ newPlayer pos acc = do
     updateMaxSpeedOf entity (MaxSpeed maxWalkSpeed maxFallSpeed)
 
     updateRenderOf entity (RenderAnim 9 AlienBlueWalk)
+
+    updateInputProcessorOf entity playerInputProcessor
+
+
+
+playerInputProcessor :: InputProcessor
+playerInputProcessor entity input = do
+                   vel <- velocityOf entity
+                   when (isJust vel) (do
+                       let vel' = fromJust vel
+                       if r && not l then
+                           updateVelOf entity (vel' & dx +~ speed)
+                       else
+                        when (l && not r)
+                                    (updateVelOf entity (vel' & dx -~ speed))
+                       )
+
+                       where l = _left input
+                             r = _right input
+
+
 
 {-anchorPoint :: Player -> (Float, Float)-}
 {-anchorPoint player = (px, py-(player ^. bounds.height) /2)-}

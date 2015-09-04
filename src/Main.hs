@@ -10,10 +10,12 @@ import           Control.Concurrent         (threadDelay)
 import           Game
 import           GLFWUtils
 
+import           Rendering
 import           Resources
-import Rendering
 
 import           Control.Monad.Reader
+
+import Components.Input
 
 windowWidth, windowHeight :: Int
 windowWidth  = 2*width  -- 1280
@@ -38,7 +40,7 @@ loop window glossState resources acc = do
             (k, l, r, u, d) <- lift $ getInputs window
 
             gamestate <- get
-            (acc', newgamestate) <- return $  runState (updateDT (dt+acc) (l,r,u,d)) gamestate
+            (acc', newgamestate) <- return $  runState (updateDT (dt+acc) (Input l r u d)) gamestate
             put newgamestate
 
 

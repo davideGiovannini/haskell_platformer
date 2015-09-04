@@ -21,10 +21,12 @@ import           Entities.Player
 
 
 import           Entities
+import           Systems
 
 import           Game.Levels                (initialLevel)
 
 
+import           Components.Input
 
 ------------------------------------------------
 
@@ -63,23 +65,25 @@ initialState = GameState 0 (execState (do
 
 
 
-updateDT :: Double -> (Bool, Bool, Bool, Bool) -> State GameState Double
+updateDT :: Double -> Input -> State GameState Double
 updateDT acc input = do
                         replicateM_ (div' acc deltaTime) (update input)
                         return $ mod' acc deltaTime
 
-update :: (Bool, Bool, Bool, Bool) -> State GameState ()
+update :: Input -> State GameState ()
 update input = do
            totalTime += deltaTime
 
            world %= execState (do
+                                 processInput input
                                  processAccelerations deltaTimeF
                                  processSpeedLimits
                                  processVelocities deltaTimeF
+                                 processCollision
                                  processWorldBoundaries
                               )
 
-           return ()
+
            {-currPlayer <- use player-}
            {-player .= execState (Player.update input deltaTimeF) currPlayer-}
 
@@ -87,15 +91,6 @@ update input = do
            {-solidtiles <- gets $ \gamestate -> Vector.filter useInCollision (gamestate ^.  level.tiles)-}
 
            {-player %= execState (collision solidtiles (currPlayer ^. position.y))-}
-
-
-           {-boundaries <- use $ level.levelBounds-}
-           {-player %= wrapAroundBounds boundaries-}
-
-           {--- FLY-}
-           {-level.enemies %= Vector.map (execState (integrateAcceleration deltaTimeF >> integrateSpeed deltaTimeF))-}
-           {-level.enemies %= Vector.map (wrapAroundBounds boundaries)-}
-
 
            {-updatedPlayer <- use player-}
            {-viewport %= followPlayer deltaTimeF updatedPlayer-}
