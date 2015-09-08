@@ -119,11 +119,6 @@ update input = do
 {-insideSquare (x, y) (sx, sy) w = x > sx-w2 && x < sx+w2 && y > sy-w2 && y < sy+w2-}
                 {-where w2 = w/2-}
 
-topOfSquare :: (Float, Float) -> (Float, Float) -> (Float, Float) -> Bool
-topOfSquare (u, v) (sx, sy) (w, h) = u > sx-w2 && u < sx+w2 && v > sy+h4 && v < sy+h2
-                where w2 = w/2
-                      h2 = h/2
-                      h4 = h/4
 
 
 

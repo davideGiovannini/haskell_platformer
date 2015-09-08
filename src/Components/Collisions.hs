@@ -1,4 +1,5 @@
-module Components.Collisions where
+module Components.Collisions
+where
 
 
 
@@ -15,4 +16,6 @@ data Collidable = Platform
                 deriving Eq
 
 
+
+newtype Friction = Friction { getFriction :: Float } deriving (Eq, Show)
 

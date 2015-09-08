@@ -17,10 +17,14 @@ import           Control.Monad.State.Strict
 import           Components.Bounds
 import           Components.Position
 import           Components.Renderable
+import Components.Collisions
 
 tileSize :: Float
 tileSize = 70
 
+
+frictionValue :: Float
+frictionValue = 0.7
 
 -------------------- FUNCTIONS ------------
 
@@ -32,6 +36,8 @@ newBlock bType (x1, y1) = do
     updateEntity ( entity & position   .~ Just(Position x1 y1)
                           & renderable .~ Just(RenderTexture bType)
                           & bounds     .~ Just(Bounds tileSize tileSize)
+                          & collidable .~ Just Platform
+                          & friction   .~ Just (Friction frictionValue)
                  )
 
 

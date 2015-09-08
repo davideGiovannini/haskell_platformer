@@ -26,6 +26,7 @@ import           Components.Bounds
 import           Components.MaxSpeed
 import           Components.Position
 import           Components.Velocity
+import           Components.JumpAbility
 
 import           Components.Collisions
 import           Components.Input
@@ -110,32 +111,56 @@ processInput input entity =
 
 
 processCollision :: Entity -> State World ()
-processCollision e = return ()
-            {-collidersToCheck <- Map.toList <$> use colliders-}
-            {-collidablesToCheck <- Map.toList <$> use collidables-}
+processCollision entity =
+                when (entity `has` bounds  &&
+                      entity `has` collider &&
+                      entity `has` velocity &&
+                      entity `has` position)
+                     (
+                         forAllEntities (\ entity2 ->
+                                             when (entity2 `has` bounds &&
+                                                   entity2 `has` collidable &&
+                                                   entity2 `has` position &&
+                                                   entity2 `has` friction)
+                                                  (
+                                                      collisionCheck entity entity2
+                                                  )
+                                        )
+                     )
+            where collisionCheck entityA entityB = do
+                       let fallSpeed = (velocity `from` entityA) ^. dy
+                           posA = position `from` entityA
+                           boundsA = bounds `from` entityA
+                           speedA = velocity `from` entityA
 
-            {-mapM_ collisionCheck [(collider, collidable) | collider <- collidersToCheck, collidable <- collidablesToCheck]-}
+                           anchorA = anchorEdge posA boundsA
+                           posB = position `from` entityB
+                           boundsB = bounds `from` entityB
+                           frict = getFriction $ friction `from` entityB
 
 
-            {-where collisionCheck ((k, _), (_, v1))-}
-                   {-| v1 == Platform-}
-                   {-= do-}
-                       {-mfallSpeed <- liftM (^. dx)<$> velocityOf k -- ritorna Maybe Float-}
-                       {-pos <- positionOf k-}
-                       {-bo <- boundsOf k-}
-                       {-let anchor = anchorEdge pos bo-}
+                       when (fallSpeed < -1 && topOfSquare anchorA posB boundsB)
+                            ( do
+                                let by = (posB ^. y) + (boundsB ^. height)/2 + (boundsA ^. height)/2
+                                    jumpInfos = if entityA `has` jumpAbility then
+                                                     jumpAbility .~ Just((jumpAbility `from` entityA) {_onGround = True})
+                                                else
+                                                     id
+                                updateEntity (entityA & position .~ Just(posA {_y = by})
+                                                      & velocity .~ Just(speedA {_dy = 0, _dx = _dx speedA*frict})
+                                                      & jumpInfos
+                                             )
+                                {-when (entityA `has` jumpAbility)-}
+                                     {-(-}
+                                     {-)-}
+                            )
 
-                       {-undefined-}
-                       {-[>if mfallSpeed < -1 then<]-}
-                            {-[>undefined<]-}
-                       {-[>else<]-}
-                            {-[>undefined<]-}
 
-                   {-| v1 == Tile-}
-                   {-= undefined-}
 
-                   {-| otherwise-}
-                   {-= undefined-}
+                  anchorEdge (Position x1 y1) (Bounds w h) = ((x1-w/2, y1-h/2), (x1+w/2, y1-h/2))
 
-                  {-anchorEdge pos bo = (\(Position x1 y1) (Bounds w h) -> ((x1-w/2, y1-h/2),(x1+w/2, y1-h/2))) <$> pos <*> bo-}
-
+                  topOfSquare ((u, v), (u1, v1)) (Position sx sy) (Bounds w h) = u > sx-w2 && u < sx+w2 && v > sy+h4 && v < sy+h2 ||
+                                                                                 u1 > sx-w2 && u1 < sx+w2 && v1 > sy+h4 && v1 < sy+h2
+                                                                                 where w2 = w/2
+                                                                                       h2 = h/2
+                                                                                       h4 = h/4

@@ -24,7 +24,8 @@ module Entities
         maxSpeed,
         velocity,
         position,
-        renderable
+        renderable,
+        friction
 
     )
 where
@@ -62,7 +63,8 @@ data Entity = Entity {
                          _renderable     :: Maybe Renderable,
                          _maxSpeed       :: Maybe MaxSpeed,
                          _collider       :: Maybe Collider,
-                         _collidable     :: Maybe Collidable
+                         _collidable     :: Maybe Collidable,
+                         _friction       :: Maybe Friction
                         }
 
 instance Show Entity where
@@ -100,6 +102,7 @@ newEntity =  do
     intId <- use maxID
     maxID += 1
     let entity = Entity intId
+                        Nothing
                         Nothing
                         Nothing
                         Nothing

@@ -11,6 +11,7 @@ import           Components.MaxSpeed
 import           Components.Position
 import           Components.Renderable
 import           Components.Velocity
+import Components.Collisions
 
 import           Entities
 import Systems
@@ -23,9 +24,6 @@ import           Control.Lens               ((&), (+~), (-~), (.~))
 
 
 
--- TODO costante provvisoria
-friction :: Float
-friction = 0.7
 
 maxFallSpeed :: Float
 maxFallSpeed = 1350
@@ -73,62 +71,31 @@ newPlayer pos acc = do
                           & renderable .~ Just(RenderAnim 9 AlienBlueWalk)
 
                           & inputProcessor .~ Just playerInputProcessor
+                          & collider .~ Just Collider
                  )
 
 
 
 playerInputProcessor :: InputProcessor
 playerInputProcessor entity input =
-                   when (entity `has` velocity ) (do
+                    when (entity `has` velocity ) (do
                        let vel = velocity `from` entity
                        if r && not l then
                            update entity velocity (vel & dx +~ speed)
                        else
-                        when (l && not r)
+                           when (l && not r)
                                     (update entity velocity (vel & dx -~ speed))
+                       when (entity `has` jumpAbility)
+                             (do
+                                let jump = jumpAbility `from` entity
+                                when (j && _onGround jump) (update entity velocity (vel & dy +~ _jumpForce jump))
+
+                             )
                        )
+                    where l = _left input
+                          r = _right input
+                          j = _up input
 
-                       where l = _left input
-                             r = _right input
-
-
-
-{-anchorPoint :: Player -> (Float, Float)-}
-{-anchorPoint player = (px, py-(player ^. bounds.height) /2)-}
-        {-where (px, py) = player ^. position.xy-}
-
-
-{-updateSpeed :: (Bool, Bool, Bool, Bool) -> State Player ()-}
-{-updateSpeed (l, r, u, d) = do-}
-    {-onground <- use onGround-}
-    {-when (l && not r) ( velocity.dx -= speed >> velocity.dx %= max (-maxWalkSpeed))-}
-    {-when (r && not l) ( velocity.dx += speed >> velocity.dx %= min maxWalkSpeed)-}
-    {-when (u && not d)  jump-}
-    {-when (d && not u && onground) (velocity.dy -= speed)-}
-    {-return ()-}
-
-
-{-integrateStep :: Float -> State Player ()-}
-{-integrateStep dt = do-}
-                    {-integrateAcceleration dt-}
-                    {-velocity.dy %= max (-maxFallSpeed)-}
-
-
-                    {-onFloor    <- use onGround-}
-                    {-when onFloor (velocity.dx %=(*friction))-}
-
-                    {-integrateSpeed dt-}
-
-
-
-
-
-{-update :: (Bool, Bool, Bool, Bool) -> Float -> State Player ()-}
-{-update input dt = do-}
-                {-jumpTimer %= \t -> if t > 0 then t-1 else 0-}
-
-                {-updateSpeed input-}
-                {-integrateStep dt-}
 
 
 
