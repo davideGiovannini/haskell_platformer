@@ -10,7 +10,7 @@ where
 import           Entities
 import           Resources
 
-import           Control.Lens               ((&), (.~))
+import           Control.Lens               ((&))
 import           Control.Monad.State.Strict
 
 
@@ -29,24 +29,24 @@ frictionValue = 0.7
 -------------------- FUNCTIONS ------------
 
 
-newBlock :: Texture -> (Float, Float)-> State World ()
-newBlock bType (x1, y1) = do
+newBlock :: Texture -> Bool -> (Float, Float)-> State World ()
+newBlock bType solid (x1, y1) = do
     entity <- newEntity
 
-    updateEntity ( entity & position   .~ Just(Position x1 y1)
-                          & renderable .~ Just(RenderTexture bType)
-                          & bounds     .~ Just(Bounds tileSize tileSize)
-                          & collidable .~ Just Platform
-                          & friction   .~ Just (Friction frictionValue)
-                 )
+    let collisions = if solid then (collidable -| Platform) . (friction -| Friction frictionValue) else id
+
+    updateEntity $ entity & position   -| Position x1 y1
+                          & renderable -| RenderTexture bType
+                          & bounds     -| Bounds tileSize tileSize
+                          & collisions
 
 
 
 sandCenter,sandTop, box, cactus :: (Float, Float)-> State World ()
-sandCenter = newBlock Sandcenter
-sandTop    = newBlock SandTop
-box        = newBlock Box
-cactus     = newBlock Cactus
+sandCenter = newBlock Sandcenter False
+sandTop    = newBlock SandTop True
+box        = newBlock Box True
+cactus     = newBlock Cactus False
 
 
 

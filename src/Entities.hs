@@ -1,9 +1,11 @@
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Entities
     (
         Entity,
         World,
         InputProcessor,
+        (-|),
 
         entities,  -- TODO remove unnecessary power to users of this API
 
@@ -76,6 +78,11 @@ instance Eq Entity where
 instance Ord Entity where
     a > b  = _getId a > _getId b
     a <= b = _getId a <= _getId b
+
+
+(-|) :: forall components. ASetter Entity Entity (Maybe components) (Maybe components) -> components -> Entity -> Entity
+lns -| val = lns .~ Just val
+
 
 --------- World DEFINITION
 

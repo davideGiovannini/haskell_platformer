@@ -39,7 +39,7 @@ from :: forall a . Getting (Maybe a) Entity (Maybe a) -> Entity -> a
 from attr entity = fromJust (entity ^. attr)
 
 update :: forall components. Entity -> ASetter Entity Entity (Maybe components) (Maybe components) -> components -> State World()
-update entity attr value = updateEntity (entity & attr .~ Just value)
+update entity attr value = updateEntity (entity & attr -| value)
 
 
 
@@ -146,13 +146,10 @@ processCollision entity =
                                                      jumpAbility .~ Just((jumpAbility `from` entityA) {_onGround = True})
                                                 else
                                                      id
-                                updateEntity (entityA & position .~ Just(posA {_y = by})
-                                                      & velocity .~ Just(speedA {_dy = 0, _dx = _dx speedA*frict})
+                                updateEntity (entityA & position -|(posA {_y = by})
+                                                      & velocity -|(speedA {_dy = 0, _dx = _dx speedA*frict})
                                                       & jumpInfos
                                              )
-                                {-when (entityA `has` jumpAbility)-}
-                                     {-(-}
-                                     {-)-}
                             )
 
 
