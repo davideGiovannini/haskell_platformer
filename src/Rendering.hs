@@ -5,16 +5,17 @@ module Rendering (
 where
 
 import           Graphics.Gloss
-import           Graphics.Gloss.Rendering as RS
-import           "GLFW-b" Graphics.UI.GLFW         as GLFW
+import           Graphics.Gloss.Data.ViewPort (applyViewPortToPicture)
+import           Graphics.Gloss.Rendering     as RS
+import           "GLFW-b" Graphics.UI.GLFW             as GLFW
 
-import qualified Data.Vector              as Vector
-import           Game                     (GameState (), height, totalTime,
-                                           width, world)
+import qualified Data.Vector                  as Vector
+import           Game                         (GameState (), height, totalTime,
+                                               viewPort, width, world)
 
 import           Control.Monad.Reader
 
-import           Control.Lens hiding (has, from)
+import           Control.Lens                 hiding (from, has)
 
 
 import           Components.Position
@@ -30,6 +31,7 @@ renderFrame :: Resources ->  Window -> RS.State -> ReaderT GameState IO ()
 renderFrame resources window glossState = do
     time      <- asks (^. totalTime)
     setEntities <- asks (^. world.entities)
+    viewP <- asks (^. viewPort)
     let pics :: Picture
         pics  = foldMap (renderEntity $ renderElem resources time) setEntities
 
@@ -42,7 +44,7 @@ renderFrame resources window glossState = do
 
     {-background_ <- asks (^.level.background)-}
 
-    lift $ displayPicture (width, height) black glossState 0 pics
+    lift $ displayPicture (width, height) black glossState 0 $ applyViewPortToPicture viewP pics
 
     {-lift $ displayPicture (width, height) (B._fillColor background_) glossState (viewPortScale viewp) $-}
                 {-renderBackground resources background_ viewp -- Draw background-}

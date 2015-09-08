@@ -10,14 +10,13 @@ where
 import           Entities
 import           Resources
 
-import           Control.Lens               ((&))
 import           Control.Monad.State.Strict
 
 
 import           Components.Bounds
+import           Components.Collisions
 import           Components.Position
 import           Components.Renderable
-import Components.Collisions
 
 tileSize :: Float
 tileSize = 70
@@ -31,14 +30,14 @@ frictionValue = 0.7
 
 newBlock :: Texture -> Bool -> (Float, Float)-> State World ()
 newBlock bType solid (x1, y1) = do
-    entity <- newEntity
 
-    let collisions = if solid then (collidable -| Platform) . (friction -| Friction frictionValue) else id
+    let collisions = if solid then collidable <== Platform |.| friction <== Friction frictionValue
+                     else id
 
-    updateEntity $ entity & position   -| Position x1 y1
-                          & renderable -| RenderTexture bType
-                          & bounds     -| Bounds tileSize tileSize
-                          & collisions
+    newEntity $ position   <== Position x1 y1
+            |.| renderable <== RenderTexture bType
+            |.| bounds     <== Bounds tileSize tileSize
+            |.| collisions
 
 
 

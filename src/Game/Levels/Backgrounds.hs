@@ -9,7 +9,6 @@ import           Resources
 
 import           Control.Monad.State.Strict
 
-import           Control.Lens               ((&))
 
 --data BackgroundElement = Sun
 --                       | Clouds1
@@ -32,8 +31,6 @@ import           Control.Lens               ((&))
 
 
 desertBackground :: State World ()
-desertBackground = do
-    entity <- newEntity
-
-    updateEntity $ entity & renderable -| RenderTexture Sun
-                          & position   -| Position 200 150
+desertBackground =
+    newEntity $ renderable <== RenderTexture Sun
+            |.| position   <== Position 200 150

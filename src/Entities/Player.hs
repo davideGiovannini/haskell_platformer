@@ -54,24 +54,22 @@ framesRecharcheJump :: Int
 framesRecharcheJump = 5
 
 
-newPlayer :: (Float, Float) -> (Float, Float) -> State World ()
-newPlayer pos acc = do
-    entity <- newEntity
+newPlayer :: (Float, Float) -> (Float, Float) -> State World Entity
+newPlayer pos acc =
+        getNewEntity $  position       <== uncurry Position pos
+                    |.| velocity       <== Velocity 0 0
+                    |.| acceleration   <== uncurry Acceleration acc
 
-    updateEntity $ entity & position       -| uncurry Position pos
-                          & velocity       -| Velocity 0 0
-                          & acceleration   -| uncurry Acceleration acc
+                    |.| bounds         <== uncurry Bounds playerSize
 
-                          & bounds         -| uncurry Bounds playerSize
+                    |.| jumpAbility    <== JumpAbility False jumpSpeed framesRecharcheJump
 
-                          & jumpAbility    -| JumpAbility False jumpSpeed framesRecharcheJump
+                    |.| maxSpeed       <== MaxSpeed maxWalkSpeed maxFallSpeed
 
-                          & maxSpeed       -| MaxSpeed maxWalkSpeed maxFallSpeed
+                    |.| renderable     <== RenderAnim 9 AlienBlueWalk
 
-                          & renderable     -| RenderAnim 9 AlienBlueWalk
-
-                          & inputProcessor -| playerInputProcessor
-                          & collider       -| Collider
+                    |.| inputProcessor <== playerInputProcessor
+                    |.| collider       <== Collider
 
 
 
@@ -80,13 +78,13 @@ playerInputProcessor entity input =
                     when (entity `has` velocity ) (do
                        let vel = velocity `from` entity
                            horizontalSpeedFun
-                                      | r && not l = velocity -| (vel & dx +~ speed)
-                                      | l && not r = velocity -| (vel & dx -~ speed)
+                                      | r && not l = velocity <== (vel & dx +~ speed)
+                                      | l && not r = velocity <== (vel & dx -~ speed)
                                       | otherwise  = id
                            verticalSpeedFun = if entity `has` jumpAbility then
                                                  let jump = jumpAbility `from` entity in
                                                      if j && _onGround jump then
-                                                        (velocity -| (vel & dy +~ _jumpForce jump)).(jumpAbility -| (jump {_onGround = False}))
+                                                        velocity <== (vel & dy +~ _jumpForce jump) |.| jumpAbility <== (jump {_onGround = False})
                                                      else id
                                               else
                                                   id

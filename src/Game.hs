@@ -7,14 +7,18 @@ module Game (
         deltaTime,
         totalTime,
         updateDT,
+        viewPort,
         world
         )
 where
 
 import           Control.Lens               hiding (Level)
 import           Control.Monad.State.Strict
+import qualified Data.Map.Strict as Map (lookup)
 import           Data.Fixed                 (div', mod')
+import Data.Maybe(fromJust)
 
+import           Graphics.Gloss.Data.ViewPort
 
 import           Entities.Fly
 import           Entities.Player
@@ -24,6 +28,7 @@ import           Entities
 import           Systems hiding (update)
 
 import           Game.Levels                (initialLevel)
+import Game.Viewport
 
 
 import           Components.Input
@@ -47,7 +52,9 @@ gravity = (0, -4800)
 data GameState = GameState {
                   _totalTime :: Double,
 
-                  _world     :: World
+                  _world     :: World,
+                  _viewPort  :: ViewPort,
+                  _player    :: Int
 
                  }
 
@@ -55,13 +62,14 @@ makeLenses ''GameState
 
 
 initialState :: GameState
-initialState = GameState 0 (execState (do
-                                      newPlayer  (100,100) gravity
-                                      newFly  (10,0) (20,0)
-                                      initialLevel
-
-    )emptyWorld)
-{-initialState = tate 0 viewPortInit (Player.newPlayer (-285,-55) gravity) initialLevel-}
+initialState = let (player', world') = runState (do
+                                                  newFly  (10,0) (20,0)
+                                                  initialLevel
+                                                  newPlayer  (100,100) gravity
+                                               )
+                                      emptyWorld
+               in
+               GameState 0 world' viewPortInit  (player' ^. getId)
 
 
 
@@ -82,6 +90,10 @@ update input = do
                                  forAllEntities processCollision
                                  forAllEntities processWorldBoundaries
                               )
+
+           playerId <- use player
+           entitiesMap <-  use $ world.entities
+           viewPort %= followEntity deltaTimeF (fromJust $ Map.lookup playerId entitiesMap)
 
 
            {-currPlayer <- use player-}

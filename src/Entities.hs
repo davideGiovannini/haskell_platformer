@@ -5,7 +5,7 @@ module Entities
         Entity,
         World,
         InputProcessor,
-        (-|),
+        (<==),(|.|),
 
         entities,  -- TODO remove unnecessary power to users of this API
 
@@ -13,6 +13,7 @@ module Entities
 
         emptyWorld,
         newEntity,
+        getNewEntity,
         updateEntity,
         removeEntity,
 
@@ -34,7 +35,7 @@ where
 
 import           Control.Lens
 
-import qualified Data.Set                   as Set (Set, delete, empty, insert,
+import qualified Data.Map.Strict                   as Map (Map, delete, empty, insert,
                                                     member)
 
 import           Control.Monad.State.Strict
@@ -80,9 +81,12 @@ instance Ord Entity where
     a <= b = _getId a <= _getId b
 
 
-(-|) :: forall components. ASetter Entity Entity (Maybe components) (Maybe components) -> components -> Entity -> Entity
-lns -| val = lns .~ Just val
+(<==) :: forall components. ASetter Entity Entity (Maybe components) (Maybe components) -> components -> Entity -> Entity
+lns <== val = lns .~ Just val
 
+(|.|) :: (Entity -> Entity) -> (Entity -> Entity) -> Entity -> Entity
+infixl 8 |.|
+f |.| g = f . g
 
 --------- World DEFINITION
 
@@ -90,7 +94,7 @@ lns -| val = lns .~ Just val
 data World = World {
                    _maxID      :: Int,
                    _dimensions :: Bounds,
-                   _entities   :: Set.Set Entity
+                   _entities   :: Map.Map Int Entity
 
                  }
 
@@ -98,14 +102,14 @@ makeLenses ''World
 makeLenses ''Entity
 
 emptyWorld :: World
-emptyWorld = World 0 emptyBounds Set.empty
+emptyWorld = World 0 emptyBounds Map.empty
 
 
 
 
 
-newEntity :: State World Entity
-newEntity =  do
+getNewEntity :: (Entity -> Entity) -> State World Entity
+getNewEntity settings =  do
     intId <- use maxID
     maxID += 1
     let entity = Entity intId
@@ -121,19 +125,26 @@ newEntity =  do
                         Nothing
                         Nothing
 
-    entities %= Set.insert entity
+    entities %= Map.insert intId (settings entity)
 
     return entity
 
+newEntity :: (Entity -> Entity) -> State World ()
+newEntity settings = do
+           _ <- getNewEntity settings
+           return ()
+
+
 
 updateEntity :: Entity ->  State World ()
-updateEntity e = entities %= Set.insert e
+updateEntity e = entities %= Map.insert (_getId e) e
 
 
 removeEntity :: Entity -> State World ()
 removeEntity entity = do
+      let eId = _getId entity
       entitiesSet <- use entities
-      when (entity `Set.member` entitiesSet) (entities %= Set.delete entity)
+      when (eId `Map.member` entitiesSet) (entities %= Map.delete eId)
       --TODO maybe do something if trying to remove non existent entities
 
 
