@@ -11,14 +11,9 @@ import Entities(World, dimensions)
 import Game.Blocks
 import Entities.Fly(newFly)
 
-import Game.Levels.Backgrounds
 
 import Components.Bounds
 import Control.Lens((.=))
-
-{-data Level = Level -}
-                     {-_background  :: Background,-}
-                     {-_levelBounds :: (Float, Float)-}
 
 
 
@@ -26,7 +21,6 @@ initialLevel :: State World ()
 initialLevel = do
                 dimensions.wh .= (4399, 600)
 
-                desertBackground
 
                 box (-355,5)
                 box (-355,-65)

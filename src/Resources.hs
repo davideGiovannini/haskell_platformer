@@ -18,8 +18,7 @@ type Textures = Texture -> Picture
 type Animations = Animation -> Vector.Vector Picture
 
 
-data Texture = Background
-             | AlienBlue
+data Texture = AlienBlue
              | AlienBlueJump
              | Sandcenter
              | SandTop
@@ -47,8 +46,7 @@ loadPng path = fromJust <$> loadJuicy path
 
 loadTextures :: IO Textures
 loadTextures =  liftM (fromJust.)
-                      (flip Map.lookup <$> (Map.fromList <$> mapM fun [(Background, "assets/uncolored_peaks.png"),
-                                                                       (AlienBlue, "assets/alienBlue.png"),
+                      (flip Map.lookup <$> (Map.fromList <$> mapM fun [(AlienBlue, "assets/alienBlue.png"),
                                                                        (AlienBlueJump, "assets/alienBlue_jump.png"),
                                                                        (Sandcenter, "assets/sandCenter.png"),
                                                                        (SandTop, "assets/sandMid.png"),

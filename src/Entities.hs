@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RankNTypes      #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Entities
     (
@@ -28,20 +28,22 @@ module Entities
         velocity,
         position,
         renderable,
-        friction
+        friction,
+        direction
 
     )
 where
 
 import           Control.Lens
 
-import qualified Data.Map.Strict                   as Map (Map, delete, empty, insert,
+import qualified Data.Map.Strict            as Map (Map, delete, empty, insert,
                                                     member)
 
 import           Control.Monad.State.Strict
 
 import           Components.Acceleration
 import           Components.Bounds
+import           Components.Direction
 import           Components.Input
 import           Components.JumpAbility
 import           Components.MaxSpeed
@@ -52,6 +54,7 @@ import           Components.Velocity
 import           Components.Collisions
 
 type InputProcessor = Entity -> Input -> State World ()
+type StateRenderer = Entity  -> Renderable
 
 --------- Entity Definition
 data Entity = Entity {
@@ -63,11 +66,12 @@ data Entity = Entity {
                          _bounds         :: Maybe Bounds,
                          _jumpAbility    :: Maybe JumpAbility,
                          _inputProcessor :: Maybe InputProcessor,
-                         _renderable     :: Maybe Renderable,
+                         _renderable     :: Maybe StateRenderer,
                          _maxSpeed       :: Maybe MaxSpeed,
                          _collider       :: Maybe Collider,
                          _collidable     :: Maybe Collidable,
-                         _friction       :: Maybe Friction
+                         _friction       :: Maybe Friction,
+                         _direction      :: Maybe Direction
                         }
 
 instance Show Entity where
@@ -113,6 +117,7 @@ getNewEntity settings =  do
     intId <- use maxID
     maxID += 1
     let entity = Entity intId
+                        Nothing
                         Nothing
                         Nothing
                         Nothing

@@ -8,15 +8,16 @@ module Game (
         totalTime,
         updateDT,
         viewPort,
+        background,
         world
         )
 where
 
-import           Control.Lens               hiding (Level)
+import           Control.Lens                 hiding (Level)
 import           Control.Monad.State.Strict
-import qualified Data.Map.Strict as Map (lookup)
-import           Data.Fixed                 (div', mod')
-import Data.Maybe(fromJust)
+import           Data.Fixed                   (div', mod')
+import qualified Data.Map.Strict              as Map (lookup)
+import           Data.Maybe                   (fromJust)
 
 import           Graphics.Gloss.Data.ViewPort
 
@@ -25,13 +26,15 @@ import           Entities.Player
 
 
 import           Entities
-import           Systems hiding (update)
+import           Systems                      hiding (update)
 
-import           Game.Levels                (initialLevel)
-import Game.Viewport
+import           Game.Levels                  (initialLevel)
+import           Game.Viewport
 
 
 import           Components.Input
+
+import Game.Levels.Backgrounds (Background, desertBackground)
 
 ------------------------------------------------
 
@@ -54,7 +57,8 @@ data GameState = GameState {
 
                   _world     :: World,
                   _viewPort  :: ViewPort,
-                  _player    :: Int
+                  _player    :: Int,
+                  _background :: Background
 
                  }
 
@@ -69,7 +73,7 @@ initialState = let (player', world') = runState (do
                                                )
                                       emptyWorld
                in
-               GameState 0 world' viewPortInit  (player' ^. getId)
+               GameState 0 world' viewPortInit  (player' ^. getId) desertBackground
 
 
 

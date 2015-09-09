@@ -35,7 +35,7 @@ newBlock bType solid (x1, y1) = do
                      else id
 
     newEntity $ position   <== Position x1 y1
-            |.| renderable <== RenderTexture bType
+            |.| renderable <== (\_ -> RenderTexture bType)
             |.| bounds     <== Bounds tileSize tileSize
             |.| collisions
 

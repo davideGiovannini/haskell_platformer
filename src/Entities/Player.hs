@@ -5,16 +5,17 @@ where
 
 import           Components.Acceleration
 import           Components.Bounds
+import           Components.Collisions
+import           Components.Direction
 import           Components.Input
 import           Components.JumpAbility
 import           Components.MaxSpeed
 import           Components.Position
 import           Components.Renderable
 import           Components.Velocity
-import Components.Collisions
 
 import           Entities
-import Systems
+import           Systems
 
 import           Resources
 
@@ -66,10 +67,11 @@ newPlayer pos acc =
 
                     |.| maxSpeed       <== MaxSpeed maxWalkSpeed maxFallSpeed
 
-                    |.| renderable     <== RenderAnim 9 AlienBlueWalk
+                    |.| renderable     <== playerStateRenderer
 
                     |.| inputProcessor <== playerInputProcessor
                     |.| collider       <== Collider
+                    |.| direction      <== SpeedDirection
 
 
 
@@ -95,6 +97,14 @@ playerInputProcessor entity input =
                           j = _up input
 
 
+playerStateRenderer :: Entity -> Renderable
+playerStateRenderer player
+                | not onFloor  = RenderTexture AlienBlueJump
+                | abs dx_ > 1  = RenderAnim 9  AlienBlueWalk
+                | otherwise    = RenderTexture AlienBlue
+
+                where (Velocity dx_ _) = if player `has` velocity then velocity `from` player else Velocity 0 0
+                      onFloor = not (player `has` jumpAbility) || _onGround (jumpAbility `from` player)
 
 
 
