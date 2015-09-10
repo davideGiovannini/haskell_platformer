@@ -2,18 +2,18 @@
 module Systems
         (
             has, from, update,
-        forAllEntities,
-        processSpeedLimits,
-        processVelocities,
-        processAccelerations,
+            forAllEntities,
+            processSpeedLimits,
+            processVelocities,
+            processAccelerations,
 
-        processWorldBoundaries,
-        processInput,
+            processWorldBoundaries,
+            processInput,
 
-        processCollision,
+            processCollision,
 
-        processJumpAbilityTimers,
-        jump
+            processJumpAbilityTimers,
+            jump
         )
 where
 

@@ -103,29 +103,3 @@ playerStateRenderer player
                       onFloor = not (player `has` jumpAbility) || _onGround (jumpAbility `from` player)
 
 
-
-{-landOn :: Float -> State Player ()-}
-{-landOn y' = do-}
-    {-onground <- use onGround-}
-    {-unless onground (do-}
-            {-onGround    .= True-}
-            {-jumpTimer   .= framesRecharcheJump)-}
-    {-velocity.dy .= 0-}
-    {-position.y .= y'-}
-
-
-
-{-jump :: State Player ()-}
-{-jump = do-}
-    {-onground <- use onGround-}
-    {-frames   <- use jumpTimer-}
-
-    {-if onground && frames == 0 then do-}
-                            {-velocity.dy += jumpSpeed-}
-                            {-onGround .= False-}
-                            {-jumpTimer .= framesJump-}
-    {-else-}
-        {-when (not onground && frames >0) (velocity.dy += jumpIncrSpeed)-}
-
-
-

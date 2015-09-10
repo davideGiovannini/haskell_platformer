@@ -27,6 +27,7 @@ import           Control.Monad.Reader
 import           Control.Lens                 hiding (from, has)
 
 
+import           Components.Bounds            (wh)
 import           Components.Direction
 import           Components.Position
 import           Components.Renderable
@@ -42,8 +43,9 @@ renderFrame :: Resources ->  Window -> RS.State -> ReaderT GameState IO ()
 renderFrame resources window glossState = do
     time      <- asks (^. totalTime)
     setEntities <- asks (^. world.entities)
-    viewP <- asks (^. viewPort)
-    backg <- asks (^. background)
+    viewP  <- asks (^. viewPort)
+    backg  <- asks (^. background)
+    (w, h) <- asks (^. world.dimensions.wh)
 
     let pics :: Picture
         pics  = foldMap (renderEntity $ renderElem resources time) setEntities
@@ -52,15 +54,9 @@ renderFrame resources window glossState = do
     lift $ displayPicture (width, height) (B._fillColor backg) glossState (viewPortScale viewP) $
                                     renderBackground resources backg viewP -- Draw background
                                     <>
+                                    applyViewPortToPicture viewP (rectangleWire  w h) -- Draw level boundaries
+                                    <>
                                     applyViewPortToPicture viewP pics
-
-    {-lift $ displayPicture (width, height) (B._fillColor background_) glossState (viewPortScale viewp) $-}
-                {-<>-}
-                {-applyViewPortToPicture viewp (rectangleWire  w h) -- Draw level boundaries-}
-                {-<>-}
-                {-applyViewPortToPicture viewp (picBlocks<>picEnemy<>picPlayer) -- Draw blocks and player-}
-
-
 
     lift $ swapBuffers window
 
@@ -72,14 +68,15 @@ renderEntity renderFunc entity =
                 renderFunc (position `from` entity) (entity & renderable `from` entity) mustFlip
           else
             Blank
-          where mustFlip = if entity `has` direction && entity `has` velocity then
-                          let (Velocity dx' _) = velocity `from` entity
-                          in
-                          case direction `from` entity of
-                               SpeedDirection          -> dx' < -1
-                               InvertedSpeedDirection  -> dx' > 1
-                       else
-                           False
+          where mustFlip = (entity `has` direction && entity `has` velocity)
+                           &&
+                           (let (Velocity dx' _) = velocity `from` entity
+                            in
+                            case direction `from` entity of
+                                SpeedDirection          -> dx' < -1
+                                InvertedSpeedDirection  -> dx' > 1
+                           )
+
 
 renderElem :: Resources -> Double -> Position -> Renderable -> Bool -> Picture
 renderElem (textures, animations) time pos resource mustFlip =
@@ -89,6 +86,7 @@ renderElem (textures, animations) time pos resource mustFlip =
         pict = if mustFlip then scale (-1) 1 pic else pic
     in
     uncurry translate (pos ^. xy) pict
+
 
 renderBackground :: Resources -> B.Background -> ViewPort -> Picture
 renderBackground res backg viewp = Pictures [ renderElement (B._statics backg),
