@@ -15,7 +15,7 @@ import           Resources
 
 import           Control.Monad.Reader
 
-import Components.Input
+import           Components.Input
 
 windowWidth, windowHeight :: Int
 windowWidth  = 2*width  -- 1280

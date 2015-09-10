@@ -86,10 +86,11 @@ instance Ord Entity where
 
 
 (<==) :: forall components. ASetter Entity Entity (Maybe components) (Maybe components) -> components -> Entity -> Entity
+infixr 3 <==
 lns <== val = lns .~ Just val
 
 (|.|) :: (Entity -> Entity) -> (Entity -> Entity) -> Entity -> Entity
-infixl 8 |.|
+infixl 2 |.|
 f |.| g = f . g
 
 --------- World DEFINITION

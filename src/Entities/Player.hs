@@ -8,7 +8,7 @@ import           Components.Bounds
 import           Components.Collisions
 import           Components.Direction
 import           Components.Input
-import           Components.JumpAbility
+import           Components.JumpAbility(JumpAbility(JumpAbility, _onGround))
 import           Components.MaxSpeed
 import           Components.Position
 import           Components.Renderable
@@ -40,16 +40,15 @@ speed = 100
 maxWalkSpeed :: Float
 maxWalkSpeed = 500
 
+
 jumpSpeed :: Float
 jumpSpeed = 800
 
 jumpIncrSpeed :: Float
 jumpIncrSpeed = 30
 
-
--- TODO better names and maybe refactoring
-framesJump :: Int
-framesJump = 30
+framesJumpExtra :: Int
+framesJumpExtra = 30
 
 framesRecharcheJump :: Int
 framesRecharcheJump = 5
@@ -63,7 +62,7 @@ newPlayer pos acc =
 
                     |.| bounds         <== uncurry Bounds playerSize
 
-                    |.| jumpAbility    <== JumpAbility False jumpSpeed framesRecharcheJump
+                    |.| jumpAbility    <== JumpAbility False jumpSpeed jumpIncrSpeed 0 framesJumpExtra framesRecharcheJump
 
                     |.| maxSpeed       <== MaxSpeed maxWalkSpeed maxFallSpeed
 
@@ -83,13 +82,10 @@ playerInputProcessor entity input =
                                       | r && not l = velocity <== (vel & dx +~ speed)
                                       | l && not r = velocity <== (vel & dx -~ speed)
                                       | otherwise  = id
-                           verticalSpeedFun = if entity `has` jumpAbility then
-                                                 let jump = jumpAbility `from` entity in
-                                                     if j && _onGround jump then
-                                                        velocity <== (vel & dy +~ _jumpForce jump) |.| jumpAbility <== (jump {_onGround = False})
-                                                     else id
-                                              else
-                                                  id
+                           verticalSpeedFun = if j then
+                                                     jump
+                                              else id
+
                        updateEntity $ entity & horizontalSpeedFun & verticalSpeedFun
                        )
                     where l = _left input

@@ -93,6 +93,7 @@ update input = do
                                  forAllEntities $ processVelocities deltaTimeF
                                  forAllEntities processCollision
                                  forAllEntities processWorldBoundaries
+                                 forAllEntities processJumpAbilityTimers
                               )
 
            playerId <- use player

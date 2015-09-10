@@ -10,7 +10,10 @@ module Systems
         processWorldBoundaries,
         processInput,
 
-        processCollision
+        processCollision,
+
+        processJumpAbilityTimers,
+        jump
         )
 where
 
@@ -23,10 +26,10 @@ import           Data.Maybe                 (fromJust, isJust)
 
 import           Components.Acceleration
 import           Components.Bounds
+import           Components.JumpAbility
 import           Components.MaxSpeed
 import           Components.Position
 import           Components.Velocity
-import           Components.JumpAbility
 
 import           Components.Collisions
 import           Components.Input
@@ -86,6 +89,7 @@ processSpeedLimits entity =
                         | v < -maxV  = -maxV
                         | otherwise =  v
 
+
 processWorldBoundaries :: Entity -> State World ()
 processWorldBoundaries entity = do
                     (w2, h2) <- ((/2)***(/2)) <$> use (dimensions.wh)
@@ -142,8 +146,12 @@ processCollision entity =
                        when (fallSpeed < -1 && topOfSquare anchorA posB boundsB)
                             ( do
                                 let by = (posB ^. y) + (boundsB ^. height)/2 + (boundsA ^. height)/2
-                                    jumpInfos = if entityA `has` jumpAbility then
-                                                     jumpAbility .~ Just((jumpAbility `from` entityA) {_onGround = True})
+                                    jumpInfos = if entityA `has` jumpAbility && not (_onGround $ jumpAbility `from` entityA) then
+                                                     let jumpAb = jumpAbility `from` entityA
+                                                     in
+                                                     jumpAbility <== jumpAb { _onGround = True,
+                                                                              _jumpTimer = _framesJumpRecharge jumpAb
+                                                                            }
                                                 else
                                                      id
                                 updateEntity (entityA & position <== (posA {_y = by})
@@ -161,3 +169,41 @@ processCollision entity =
                                                                                  where w2 = w/2
                                                                                        h2 = h/2
                                                                                        h4 = h/4
+
+
+
+
+
+jump :: Entity ->  Entity
+jump entity
+    | entity `has` jumpAbility && entity `has` velocity =
+                  let onground = _onGround  $ jumpAbility `from` entity
+                      frames   = _jumpTimer $ jumpAbility `from` entity
+                      vel      = velocity `from` entity
+                      jumpAb   = jumpAbility `from` entity
+                  in
+                  if onground && frames == 0 then
+                                entity & velocity    <== (vel & dy +~ _jumpForce jumpAb)
+                                     |.| jumpAbility <== jumpAb { _onGround = False,
+                                                                  _jumpTimer = _framesJumpPower jumpAb
+                                                                }
+                  else
+                      if not onground && frames >0 then
+                           entity & velocity    <== (vel & dy +~ _jumpIncrSpeed jumpAb)
+                                |.| jumpAbility <== (jumpAb & jumpTimer -~ 1)
+                      else
+                           entity
+
+    | otherwise = entity
+
+
+processJumpAbilityTimers :: Entity -> State World()
+processJumpAbilityTimers entity =
+            when (entity `has` jumpAbility)
+                 (do
+                    let jumpAb = jumpAbility `from` entity
+
+                    when (jumpAb ^. onGround && jumpAb ^. jumpTimer >0) (updateEntity $ entity & jumpAbility <== (jumpAb & jumpTimer -~ 1))
+                 )
+
+
