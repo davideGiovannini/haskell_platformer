@@ -22,6 +22,7 @@ import           Data.Maybe                   (fromJust)
 import           Graphics.Gloss.Data.ViewPort
 
 import           Entities.Fly
+import           Entities.Slime
 import           Entities.Player
 
 
@@ -69,6 +70,7 @@ initialState :: GameState
 initialState = let (player', world') = runState (do
                                                   newFly  (10,0) (20,0)
                                                   initialLevel
+                                                  newSlime (60, 0) (600, 0) gravity
                                                   newPlayer  (100,100) gravity
                                                )
                                       emptyWorld

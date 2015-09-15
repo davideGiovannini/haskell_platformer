@@ -32,6 +32,7 @@ data Texture = AlienBlue
 
 data Animation = AlienBlueWalk
                | Fly
+               | Slime
                deriving (Ord, Eq, Show)
 
 
@@ -64,7 +65,8 @@ loadTextures =  liftM (fromJust.)
 loadAnimations :: IO Animations
 loadAnimations = liftM (fromJust.) (flip Map.lookup <$> (Map.fromList <$> mapM fun [
                                 (AlienBlueWalk, Vector.fromList ["assets/alienBlueWalk/p2_walk0"++ show (n::Int) ++ ".png" | n <- [1..9]]),
-                                (Fly, Vector.fromList ["assets/fly/fly"++ show (n::Int) ++ ".png" | n <- [1..2]])
+                                (Fly, Vector.fromList ["assets/fly/fly"++ show (n::Int) ++ ".png" | n <- [1..2]]),
+                                (Slime, Vector.fromList ["assets/slime/slimeWalk"++ show (n::Int) ++ ".png" | n <- [1..2]])
                               ]))
     where fun (texture, ls) = do
                        pics <- mapM loadPng ls
