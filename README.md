@@ -1,5 +1,5 @@
 
-# haskell_chess
+# haskell_platformer
 
 A game engine in Haskell using [Gloss](http://gloss.ouroborus.net/) to try the [Entity Component System](https://en.wikipedia.org/wiki/Entity%E2%80%93component%E2%80%93system) pattern.
 
